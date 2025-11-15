@@ -57,12 +57,3 @@ async def content_plan_handler(callback: types.CallbackQuery, state: FSMContext)
     )
 
 
-@router.callback_query(F.data == "main_menu:help")
-async def help_handler(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
-    return await callback.message.edit_text(
-        "❓ Помощь\n\n"
-        "Эта функция будет реализована позже.",
-        reply_markup=back_to_menu_keyboard()
-    )
-

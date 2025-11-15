@@ -13,6 +13,18 @@ from src.bot.states import NKODataStates
 from src.services.nko_service import nko_service
 
 
+NKO_FORMS = {
+    "projects": "🎯 Проекты",
+    "events": "🎪 Мероприятия",
+    "donations": "💰 Сбор пожертвований",
+    "volunteering": "🤝 Волонтёрство",
+    "education": "📚 Образование",
+    "direct_help": "🏥 Адресная помощь",
+    "info_work": "📢 Информационная работа",
+    "other": "✏️ Другое",
+}
+
+
 router = Router()
 
 
@@ -30,7 +42,20 @@ def format_nko_data(data: dict) -> str:
     forms = data.get("forms")
     if forms:
         if isinstance(forms, list):
-            text += f"<b>Формы деятельности:</b> {', '.join(forms)}\n"
+            forms_display = []
+            for form_key in forms:
+                if form_key == "other":
+                    other_text = data.get("forms_other", "")
+                    if other_text:
+                        forms_display.append(f"✏️ Другое: {other_text}")
+                    else:
+                        forms_display.append("✏️ Другое")
+                else:
+                    forms_display.append(NKO_FORMS.get(form_key, form_key))
+            
+            text += "<b>Формы деятельности:</b>\n"
+            for form in forms_display:
+                text += f"  • {form}\n"
         else:
             text += f"<b>Формы деятельности:</b> {forms}\n"
 
@@ -159,17 +184,7 @@ async def nko_forms_toggle_handler(callback: types.CallbackQuery, state: FSMCont
             reply_markup=back_to_menu_keyboard()
         )
     
-    form_names = {
-        "projects": "🎯 Проекты",
-        "events": "🎪 Мероприятия",
-        "donations": "💰 Сбор пожертвований",
-        "volunteering": "🤝 Волонтёрство",
-        "education": "📚 Образование",
-        "direct_help": "🏥 Адресная помощь",
-        "info_work": "📢 Информационная работа",
-    }
-    
-    selected_text = form_names.get(form_key, "")
+    selected_text = NKO_FORMS.get(form_key, "")
     was_selected = form_key in forms_list
     
     if was_selected:
@@ -286,17 +301,6 @@ async def nko_contacts_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     await nko_service.save_nko_data(user_id, data)
     
-    form_names = {
-        "projects": "🎯 Проекты",
-        "events": "🎪 Мероприятия",
-        "donations": "💰 Сбор пожертвований",
-        "volunteering": "🤝 Волонтёрство",
-        "education": "📚 Образование",
-        "direct_help": "🏥 Адресная помощь",
-        "info_work": "📢 Информационная работа",
-        "other": "✏️ Другое",
-    }
-    
     forms_display = []
     forms_list = data.get("forms", [])
     for form_key in forms_list:
@@ -304,7 +308,7 @@ async def nko_contacts_handler(message: types.Message, state: FSMContext):
             other_text = data.get("forms_other", "")
             forms_display.append(f"✏️ Другое: {other_text}")
         else:
-            forms_display.append(form_names.get(form_key, form_key))
+            forms_display.append(NKO_FORMS.get(form_key, form_key))
     
     confirmation_text = (
         "✅ <b>Данные успешно сохранены!</b>\n\n"
@@ -338,17 +342,6 @@ async def nko_contacts_skip_handler(callback: types.CallbackQuery, state: FSMCon
     user_id = callback.from_user.id
     await nko_service.save_nko_data(user_id, data)
     
-    form_names = {
-        "projects": "🎯 Проекты",
-        "events": "🎪 Мероприятия",
-        "donations": "💰 Сбор пожертвований",
-        "volunteering": "🤝 Волонтёрство",
-        "education": "📚 Образование",
-        "direct_help": "🏥 Адресная помощь",
-        "info_work": "📢 Информационная работа",
-        "other": "✏️ Другое",
-    }
-    
     forms_display = []
     forms_list = data.get("forms", [])
     for form_key in forms_list:
@@ -356,7 +349,7 @@ async def nko_contacts_skip_handler(callback: types.CallbackQuery, state: FSMCon
             other_text = data.get("forms_other", "")
             forms_display.append(f"✏️ Другое: {other_text}")
         else:
-            forms_display.append(form_names.get(form_key, form_key))
+            forms_display.append(NKO_FORMS.get(form_key, form_key))
     
     confirmation_text = (
         "✅ <b>Данные успешно сохранены!</b>\n\n"
