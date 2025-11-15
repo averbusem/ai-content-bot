@@ -1,59 +1,41 @@
-from dataclasses import dataclass
-from os import getenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-@dataclass
-class BotConfig:
-    """Конфигурация Telegram бота"""
-    token: str
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
+    # Telegram Bot
+    BOT_TOKEN: str = ""
 
-@dataclass
-class GigaChatSettings:
-    """Настройки GigaChat"""
-    client_id: str
-    client_secret: str
-    model: str = "GigaChat"
-    temperature: float = 0.7
-    max_tokens: int = 2048
+    # Redis
+    REDIS_HOST: str = ""
+    REDIS_PORT: str = ""
+    REDIS_PASSWORD: str = ""
+    REDIS_DB: str = "0"
 
-
-@dataclass
-class SaluteSpeechSettings:
-    """Настройки Salute Speech"""
-    client_id: str
-    client_secret: str
-    scope: str = "SALUTE_SPEECH_PERS"
-
-
-@dataclass
-class Config:
-    """Общая конфигурация"""
-    bot: BotConfig
-    gigachat: GigaChatSettings
-    salute_speech: SaluteSpeechSettings
-
-
-def load_config() -> Config:
-    """
-    Загрузка конфигурации из переменных окружения
-
-    Returns:
-        Объект конфигурации
-    """
-    return Config(
-        bot=BotConfig(
-            token=getenv("BOT_TOKEN", "")
-        ),
-        gigachat=GigaChatSettings(
-            client_id=getenv("GIGACHAT_CLIENT_ID", ""),
-            client_secret=getenv("GIGACHAT_CLIENT_SECRET", ""),
-            model=getenv("GIGACHAT_MODEL", "GigaChat"),
-            temperature=float(getenv("AI_TEMPERATURE", "0.7")),
-            max_tokens=int(getenv("AI_MAX_TOKENS", "2048"))
-        ),
-        salute_speech=SaluteSpeechSettings(
-            client_id=getenv("SALUTE_CLIENT_ID", ""),
-            client_secret=getenv("SALUTE_CLIENT_SECRET", "")
+    @property
+    def REDIS_URL(self) -> str:
+        url = (
+            f"redis://:{self.REDIS_PASSWORD}@"
+            f"{self.REDIS_HOST}:{self.REDIS_PORT}"
+            f"/{self.REDIS_DB}"
         )
-    )
+        return url
+
+    # GigaChat
+    GIGACHAT_CLIENT_ID: str = ""
+    GIGACHAT_CLIENT_SECRET: str = ""
+    GIGACHAT_SCOPE: str = "GIGACHAT_API_PERS"
+    GIGACHAT_MODEL: str = "GigaChat"
+    AI_TEMPERATURE: float = 0.7
+    AI_MAX_TOKENS: int = 2048
+
+    # Salute Speech
+    SALUTE_CLIENT_ID: str = ""
+    SALUTE_CLIENT_SECRET: str = ""
+    SALUTE_SCOPE: str = "SALUTE_SPEECH_PERS"
+
+
+
+
+settings = Settings()

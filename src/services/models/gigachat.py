@@ -2,18 +2,7 @@ import httpx
 import base64
 import uuid
 from typing import Optional, List, Dict
-from dataclasses import dataclass
-
-
-@dataclass
-class GigaChatConfig:
-    """Конфигурация для GigaChat"""
-    client_id: str
-    client_secret: str
-    scope: str = "GIGACHAT_API_PERS"
-    model: str = "GigaChat"
-    temperature: float = 0.7
-    max_tokens: int = 2048
+from src.config import settings
 
 
 class GigaChatModel:
@@ -22,15 +11,14 @@ class GigaChatModel:
     AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     BASE_URL = "https://gigachat.devices.sberbank.ru/api/v1"
 
-    def __init__(self, config: GigaChatConfig):
-        self.config = config
+    def __init__(self):
         self.access_token: Optional[str] = None
         self.token_expires_at: float = 0
         self.conversation_history: List[Dict[str, str]] = []
 
     async def _get_auth_token(self) -> str:
         """Получение токена авторизации"""
-        auth_string = f"{self.config.client_id}:{self.config.client_secret}"
+        auth_string = f"{settings.GIGACHAT_CLIENT_ID}:{settings.GIGACHAT_CLIENT_SECRET}"
         auth_encoded = base64.b64encode(auth_string.encode()).decode()
 
         headers = {
@@ -40,7 +28,7 @@ class GigaChatModel:
         }
 
         data = {
-            "scope": self.config.scope
+            "scope": settings.GIGACHAT_SCOPE
         }
 
         async with httpx.AsyncClient(verify=False) as client:
@@ -106,10 +94,10 @@ class GigaChatModel:
         }
 
         payload = {
-            "model": self.config.model,
+            "model": settings.GIGACHAT_MODEL,
             "messages": messages,
-            "temperature": temperature or self.config.temperature,
-            "max_tokens": max_tokens or self.config.max_tokens,
+            "temperature": temperature or settings.AI_TEMPERATURE,
+            "max_tokens": max_tokens or settings.AI_MAX_TOKENS,
             "repetition_penalty": 1.1
         }
 

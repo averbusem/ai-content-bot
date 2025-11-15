@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.ai.ai_manager import AIManager
+from src.services.ai_manager import AIManager
 
 
 async def test_text_generation():
@@ -14,14 +14,7 @@ async def test_text_generation():
     print("ТЕСТ 1: Генерация свободного текста поста")
     print("="*60)
 
-    ai_manager = AIManager(
-        gigachat_client_id=os.getenv("GIGACHAT_CLIENT_ID"),
-        gigachat_client_secret=os.getenv("GIGACHAT_CLIENT_SECRET"),
-        salute_client_id=os.getenv("SALUTE_CLIENT_ID"),
-        salute_client_secret=os.getenv("SALUTE_CLIENT_SECRET"),
-        gigachat_model=os.getenv("GIGACHAT_MODEL", "GigaChat"),
-        salute_scope=os.getenv("SALUTE_SCOPE", "SALUTE_SPEECH_PERS")
-    )
+    ai_manager = AIManager()
 
     ngo_info = {
         "name": "Благотворительная организация 'Ночлежка'",
@@ -57,13 +50,7 @@ async def test_structured_post():
     print("ТЕСТ 2: Генерация структурированного поста (анонс события)")
     print("="*60)
 
-    ai_manager = AIManager(
-        gigachat_client_id=os.getenv("GIGACHAT_CLIENT_ID"),
-        gigachat_client_secret=os.getenv("GIGACHAT_CLIENT_SECRET"),
-        salute_client_id=os.getenv("SALUTE_CLIENT_ID"),
-        salute_client_secret=os.getenv("SALUTE_CLIENT_SECRET"),
-        salute_scope=os.getenv("SALUTE_SCOPE", "SALUTE_SPEECH_PERS")
-    )
+    ai_manager = AIManager()
 
     ngo_info = {
         "name": "Экологическое движение 'Зелёный мир'",
@@ -100,13 +87,7 @@ async def test_text_editing():
     print("ТЕСТ 3: Редактирование текста")
     print("="*60)
 
-    ai_manager = AIManager(
-        gigachat_client_id=os.getenv("GIGACHAT_CLIENT_ID"),
-        gigachat_client_secret=os.getenv("GIGACHAT_CLIENT_SECRET"),
-        salute_client_id=os.getenv("SALUTE_CLIENT_ID"),
-        salute_client_secret=os.getenv("SALUTE_CLIENT_SECRET"),
-        salute_scope=os.getenv("SALUTE_SCOPE", "SALUTE_SPEECH_PERS")
-    )
+    ai_manager = AIManager()
 
     try:
         text_to_edit = """
@@ -149,13 +130,7 @@ async def test_content_plan():
     print("ТЕСТ 4: Создание контент-плана")
     print("="*60)
 
-    ai_manager = AIManager(
-        gigachat_client_id=os.getenv("GIGACHAT_CLIENT_ID"),
-        gigachat_client_secret=os.getenv("GIGACHAT_CLIENT_SECRET"),
-        salute_client_id=os.getenv("SALUTE_CLIENT_ID"),
-        salute_client_secret=os.getenv("SALUTE_CLIENT_SECRET"),
-        salute_scope=os.getenv("SALUTE_SCOPE", "SALUTE_SPEECH_PERS")
-    )
+    ai_manager = AIManager()
 
     ngo_info = {
         "name": "Фонд помощи детям 'Счастливое детство'",
@@ -189,12 +164,7 @@ async def test_image_generation():
     print("ТЕСТ 5: Генерация изображения")
     print("="*60)
 
-    ai_manager = AIManager(
-        gigachat_client_id=os.getenv("GIGACHAT_CLIENT_ID"),
-        gigachat_client_secret=os.getenv("GIGACHAT_CLIENT_SECRET"),
-        salute_client_id=os.getenv("SALUTE_CLIENT_ID"),
-        salute_client_secret=os.getenv("SALUTE_CLIENT_SECRET")
-    )
+    ai_manager = AIManager()
 
     try:
         print("\nГенерируем изображение...")
@@ -230,14 +200,7 @@ async def test_voice_transcription():
     print("ТЕСТ 6: Транскрибация голосового сообщения")
     print("="*60)
 
-    ai_manager = AIManager(
-        gigachat_client_id=os.getenv("GIGACHAT_CLIENT_ID"),
-        gigachat_client_secret=os.getenv("GIGACHAT_CLIENT_SECRET"),
-        salute_client_id=os.getenv("SALUTE_CLIENT_ID"),
-        salute_client_secret=os.getenv("SALUTE_CLIENT_SECRET"),
-        gigachat_model=os.getenv("GIGACHAT_MODEL", "GigaChat"),
-        salute_scope=os.getenv("SALUTE_SCOPE", "SALUTE_SPEECH_PERS")
-    )
+    ai_manager = AIManager()
 
     try:
         audio_file = Path("test_output/test_audio.ogg")
@@ -318,8 +281,8 @@ async def main():
     print("="*60 + "\n")
 
 
-# if __name__ == "__main__":
-#     # Запускаем тесты
-#     asyncio.run(main())
+if __name__ == "__main__":
+    # Запускаем тесты
+    asyncio.run(main())
 
 asyncio.run(test_voice_transcription())

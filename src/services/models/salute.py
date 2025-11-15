@@ -2,16 +2,8 @@ import httpx
 import base64
 import uuid
 from typing import Optional
-from dataclasses import dataclass
 from pathlib import Path
-
-
-@dataclass
-class SaluteSpeechConfig:
-    """Конфигурация для Salute Speech"""
-    client_id: str
-    client_secret: str
-    scope: str = "SALUTE_SPEECH_PERS"
+from src.config import settings
 
 
 class SaluteSpeechModel:
@@ -20,13 +12,12 @@ class SaluteSpeechModel:
     AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     BASE_URL = "https://smartspeech.sber.ru/rest/v1"
 
-    def __init__(self, config: SaluteSpeechConfig):
-        self.config = config
+    def __init__(self):
         self.access_token: Optional[str] = None
         self.token_expires_at: float = 0
 
     async def _get_auth_token(self) -> str:
-        auth_string = f"{self.config.client_id}:{self.config.client_secret}"
+        auth_string = f"{settings.SALUTE_CLIENT_ID}:{settings.SALUTE_CLIENT_SECRET}"
         auth_encoded = base64.b64encode(auth_string.encode()).decode()
 
         headers = {
@@ -36,7 +27,7 @@ class SaluteSpeechModel:
         }
 
         data = {
-            "scope": self.config.scope
+            "scope": settings.SALUTE_SCOPE
         }
 
         async with httpx.AsyncClient(verify=False) as client:

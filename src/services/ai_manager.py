@@ -1,36 +1,16 @@
 from typing import Optional, Dict, Any
-from .models.gigachat import GigaChatModel, GigaChatConfig
-from .models.salute import SaluteSpeechModel, SaluteSpeechConfig
+from .models.gigachat import GigaChatModel
+from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
 
 
 class AIManager:
-    def __init__(
-        self,
-        gigachat_client_id: str,
-        gigachat_client_secret: str,
-        salute_client_id: str,
-        salute_client_secret: str,
-        gigachat_model: str = "GigaChat",
-        temperature: float = 0.7,
-        salute_scope: str = "SALUTE_SPEECH_PERS"
-    ):
+    def __init__(self):
         # Инициализация GigaChat
-        gigachat_config = GigaChatConfig(
-            client_id=gigachat_client_id,
-            client_secret=gigachat_client_secret,
-            model=gigachat_model,
-            temperature=temperature
-        )
-        self.gigachat = GigaChatModel(gigachat_config)
+        self.gigachat = GigaChatModel()
 
         # Инициализация Salute Speech
-        salute_config = SaluteSpeechConfig(
-            client_id=salute_client_id,
-            client_secret=salute_client_secret,
-            scope=salute_scope
-        )
-        self.salute_speech = SaluteSpeechModel(salute_config)
+        self.salute_speech = SaluteSpeechModel()
 
         # Инициализация генератора контента
         self.content_generator = ContentGenerator(self.gigachat)
