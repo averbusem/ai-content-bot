@@ -88,3 +88,25 @@ def nko_skip_keyboard() -> InlineKeyboardMarkup:
     
     builder.adjust(1)
     return builder.as_markup()
+
+
+def text_generation_method_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="💬 Свободный текст", callback_data="text_gen:free_text"))
+    builder.add(InlineKeyboardButton(text="📋 Структурированная форма", callback_data="text_gen:struct"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def text_generation_results_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="✅ Всё отлично, спасибо!", callback_data="text_result:ok"))
+    builder.add(InlineKeyboardButton(text="✏️ Изменить", callback_data="text_result:edit"))
+    builder.add(InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()

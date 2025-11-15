@@ -14,3 +14,14 @@ class NKODataStates(StatesGroup):
     region = State()
     contacts = State()
 
+
+class TextGenerationStates(StatesGroup):
+    method_selection = State()
+    free_text_input = State()
+    waiting_results = State()
+    editing = State()
+
+
+class TextGenerationStructStates(StatesGroup):
+    method_selection = State()
+
