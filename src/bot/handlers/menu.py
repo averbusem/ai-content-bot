@@ -2,7 +2,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from src.bot.keyboards import main_menu_keyboard, back_to_menu_keyboard, text_generation_method_keyboard
-from src.bot.states import MainMenuStates, TextGenerationStates, TextEditorStates
+from src.bot.states import MainMenuStates, TextGenerationStates, TextEditorStates, ContentPlanStates
 
 router = Router()
 
@@ -40,12 +40,14 @@ async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "main_menu:content_plan")
-async def content_plan_handler(callback: types.CallbackQuery, state: FSMContext):
+async def content_plan_start(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(ContentPlanStates.duration_input)
     await callback.answer()
     return await callback.message.edit_text(
-        "📅 Контент-план\n\n"
-        "Реализация позже.",
+        "📅 <b>Создание контент-плана</b>\n\n"
+        "Контент-план поможет вам регулярно публиковать разнообразный контент.\n\n"
+        "На какой период создать план?\n"
+        "Укажите количество дней (например: 7, 14, 30)",
         reply_markup=back_to_menu_keyboard()
     )
-
 

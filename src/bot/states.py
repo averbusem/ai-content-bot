@@ -51,4 +51,11 @@ class ImageGenerationStates(StatesGroup):
     description = State()  
     style = State()  
     colors = State()
-    waiting_results = State()  
+    waiting_results = State()
+
+
+class ContentPlanStates(StatesGroup):
+    duration_input = State()
+    frequency_input = State()
+    preferences_input = State()
+    waiting_results = State()

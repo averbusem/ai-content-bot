@@ -8,6 +8,7 @@ from src.bot.handlers.text_generation import router as router_text_generation
 from src.bot.handlers.text_generation_struct import router as router_text_generation_struct
 from src.bot.handlers.image_generation import router as router_image_generation
 from src.bot.handlers.text_editor import router as router_text_editor
+from src.bot.handlers.content_plan import router as router_content_plan
 
 
 router = Router()
@@ -22,5 +23,6 @@ def get_handlers_router() -> Router:
     router.include_router(router_text_generation_struct)
     router.include_router(router_image_generation)
     router.include_router(router_text_editor)
+    router.include_router(router_content_plan)
 
     return router
