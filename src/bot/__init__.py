@@ -1,6 +1,7 @@
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.fsm.storage.redis import RedisStorage
 
 
 from aiogram.types import BotCommand
@@ -10,7 +11,8 @@ from src.bot.middlewares import RemoveLastKeyboardMiddleware
 from src.config import settings
 
 bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-dp = Dispatcher()
+storage = RedisStorage.from_url(settings.REDIS_URL)
+dp = Dispatcher(storage=storage)
 
 dp.message.middleware(RemoveLastKeyboardMiddleware())
 dp.callback_query.middleware(RemoveLastKeyboardMiddleware())

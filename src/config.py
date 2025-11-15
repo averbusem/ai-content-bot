@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     # Telegram Bot
     BOT_TOKEN: str = ""
 
-    # Redis
     REDIS_HOST: str = ""
     REDIS_PORT: str = ""
     REDIS_PASSWORD: str = ""
