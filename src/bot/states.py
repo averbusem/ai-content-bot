@@ -7,4 +7,10 @@ class MainMenuStates(StatesGroup):
 
 class NKODataStates(StatesGroup):
     nko_menu = State()
+    name = State()
+    activity = State()
+    forms = State()
+    forms_other = State()
+    region = State()
+    contacts = State()
 

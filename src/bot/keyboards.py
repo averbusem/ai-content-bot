@@ -44,3 +44,47 @@ def nko_data_exists_keyboard() -> InlineKeyboardMarkup:
     builder.adjust(1)
     return builder.as_markup()
 
+
+def nko_forms_keyboard(selected_forms: list = None) -> InlineKeyboardMarkup:
+    if selected_forms is None:
+        selected_forms = []
+    
+    builder = InlineKeyboardBuilder()
+    
+    forms = [
+        ("🎯 Проекты", "forms:projects"),
+        ("🎪 Мероприятия", "forms:events"),
+        ("💰 Сбор пожертвований", "forms:donations"),
+        ("🤝 Волонтёрство", "forms:volunteering"),
+        ("📚 Образование", "forms:education"),
+        ("🏥 Адресная помощь", "forms:direct_help"),
+        ("📢 Информационная работа", "forms:info_work"),
+        ("✏️ Другое", "forms:other"),
+    ]
+    
+    for text, callback_data in forms:
+        is_selected = callback_data.split(":")[1] in selected_forms
+        prefix = "✅ " if is_selected else ""
+        builder.add(InlineKeyboardButton(
+            text=f"{prefix}{text}",
+            callback_data=callback_data
+        ))
+    
+    builder.adjust(2)
+    
+    if selected_forms:
+        builder.add(InlineKeyboardButton(text="➡️ Далее", callback_data="nko_forms:next"))
+    
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    return builder.as_markup()
+
+
+def nko_skip_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="⏭️ Пропустить", callback_data="nko_skip:skip"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
