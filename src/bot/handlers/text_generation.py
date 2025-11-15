@@ -3,11 +3,10 @@ from aiogram.fsm.context import FSMContext
 
 from src.bot.keyboards import back_to_menu_keyboard, text_generation_results_keyboard, main_menu_keyboard
 from src.bot.states import TextGenerationStates, MainMenuStates
-from src.services.nko_service import nko_service
-from src.services.prompt_builder import build_free_text_prompt
-from src.services.text_generation_service import generate_text
+from src.services.ai_manager import AIManager
 
 router = Router()
+ai_manager = AIManager()
 
 
 @router.callback_query(F.data == "text_gen:free_text")
@@ -38,16 +37,23 @@ async def free_text_input_handler(message: types.Message, state: FSMContext):
         )
     
     user_id = message.from_user.id
-    nko_data = await nko_service.get_nko_data(user_id)
-    
-    prompt = build_free_text_prompt(user_text, nko_data)
     
     await state.set_state(TextGenerationStates.waiting_results)
-    await state.update_data(user_text=user_text, prompt=prompt)
+    await state.update_data(user_text=user_text)
     
     loading_msg = await message.answer("⏳ Генерирую пост...")
     
-    post = await generate_text(prompt)
+    try:
+        post = await ai_manager.generate_free_text_post(
+            user_id=user_id,
+            user_idea=user_text
+        )
+    except Exception as e:
+        await loading_msg.delete()
+        return await message.answer(
+            f"❌ Произошла ошибка при генерации поста: {str(e)}",
+            reply_markup=back_to_menu_keyboard()
+        )
     
     await loading_msg.delete()
     
@@ -82,16 +88,23 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
         )
     
     user_id = message.from_user.id
-    nko_data = await nko_service.get_nko_data(user_id)
-    
-    prompt = build_free_text_prompt(user_text, nko_data)
     
     await state.set_state(TextGenerationStates.waiting_results)
-    await state.update_data(user_text=user_text, prompt=prompt)
+    await state.update_data(user_text=user_text)
     
     loading_msg = await message.answer("⏳ Генерирую пост...")
     
-    post = await generate_text(prompt)
+    try:
+        post = await ai_manager.generate_free_text_post(
+            user_id=user_id,
+            user_idea=user_text
+        )
+    except Exception as e:
+        await loading_msg.delete()
+        return await message.answer(
+            f"❌ Произошла ошибка при генерации поста: {str(e)}",
+            reply_markup=back_to_menu_keyboard()
+        )
     
     await loading_msg.delete()
     
@@ -145,19 +158,30 @@ async def editing_handler(message: types.Message, state: FSMContext):
     
     data = await state.get_data()
     original_post = data.get("post", "")
-    user_text = data.get("user_text", "")
     
-    # Объединяем исходный запрос с уточнением
-    combined_request = f"{user_text}\n\nДополнительно: {edit_request}"
+    if not original_post:
+        return await message.answer(
+            "❌ Не найден исходный пост для редактирования.",
+            reply_markup=back_to_menu_keyboard()
+        )
     
     user_id = message.from_user.id
-    nko_data = await nko_service.get_nko_data(user_id)
-    
-    edit_prompt = f"{build_free_text_prompt(combined_request, nko_data)}\n\nИсходный пост: {original_post}"
     
     loading_msg = await message.answer("⏳ Обновляю пост...")
     
-    updated_post = await generate_text(edit_prompt)
+    try:
+        # Используем edit_post для редактирования на основе исходного поста
+        updated_post = await ai_manager.edit_post(
+            user_id=user_id,
+            original_post=original_post,
+            edit_request=edit_request
+        )
+    except Exception as e:
+        await loading_msg.delete()
+        return await message.answer(
+            f"❌ Произошла ошибка при обновлении поста: {str(e)}",
+            reply_markup=back_to_menu_keyboard()
+        )
     
     await loading_msg.delete()
     

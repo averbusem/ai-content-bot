@@ -2,6 +2,8 @@ from typing import Optional, Dict, Any
 from .models.gigachat import GigaChatModel
 from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
+from .image_generator import ImageGenerator
+from .nko_service import nko_service
 
 
 class AIManager:
@@ -15,15 +17,8 @@ class AIManager:
         # Инициализация генератора контента
         self.content_generator = ContentGenerator(self.gigachat)
 
-        # Хранилище информации об НКО для каждого пользователя
-        self.user_ngo_info: Dict[int, Dict[str, Any]] = {}
-
-    def set_user_ngo_info(self, user_id: int, ngo_info: Dict[str, Any]):
-        self.user_ngo_info[user_id] = ngo_info
-        self.content_generator.set_ngo_info(ngo_info)
-
-    def get_user_ngo_info(self, user_id: int) -> Optional[Dict[str, Any]]:
-        return self.user_ngo_info.get(user_id)
+        # Инициализация генератора изображений
+        self.image_generator = ImageGenerator(self.gigachat)
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
 
@@ -35,9 +30,10 @@ class AIManager:
         additional_info: Optional[str] = None
     ) -> str:
         """Генерация свободного текста поста"""
-        # Устанавливаем контекст НКО если есть
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -58,8 +54,10 @@ class AIManager:
         style: str = "разговорный"
     ) -> str:
         """Генерация структурированного поста"""
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -72,6 +70,41 @@ class AIManager:
             style=style
         )
 
+    async def generate_structured_form_post(
+        self,
+        user_id: int,
+        event: str,
+        description: str,
+        goal: str,
+        date: Optional[str] = None,
+        location: Optional[str] = None,
+        platform: str = "universal",
+        audience: str = "broad",
+        style: str = "warm",
+        length: str = "medium",
+        additional_info: Optional[str] = None
+    ) -> str:
+        """Генерация поста на основе структурированной формы (10 вопросов)"""
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
+        else:
+            self.content_generator.ngo_info = None
+
+        return await self.content_generator.generate_structured_form_post(
+            event=event,
+            description=description,
+            goal=goal,
+            date=date,
+            location=location,
+            platform=platform,
+            audience=audience,
+            style=style,
+            length=length,
+            additional_info=additional_info
+        )
+
     async def generate_post_from_example(
         self,
         user_id: int,
@@ -80,8 +113,10 @@ class AIManager:
         style: Optional[str] = None
     ) -> str:
         """Генерация поста на основе примера"""
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -89,6 +124,24 @@ class AIManager:
             example_post=example_post,
             new_topic=new_topic,
             style=style
+        )
+
+    async def edit_post(
+        self,
+        user_id: int,
+        original_post: str,
+        edit_request: str
+    ) -> str:
+        """Редактирование поста на основе запроса пользователя"""
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
+        else:
+            self.content_generator.ngo_info = None
+        return await self.content_generator.edit_post(
+            original_post=original_post,
+            edit_request=edit_request
         )
 
     async def edit_text(
@@ -109,9 +162,11 @@ class AIManager:
         posts_per_week: int,
         preferences: Optional[str] = None
     ) -> str:
-        """Создание контент-плана !!! ДОРАБОТАТЬ !!!"""
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        """Создание контент-плана"""
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -129,8 +184,25 @@ class AIManager:
         width: int = 1024,
         height: int = 1024
     ) -> bytes:
-        return await self.gigachat.generate_image(
+        return await self.image_generator.generate_image(
             prompt=prompt,
+            width=width,
+            height=height
+        )
+
+    async def generate_image_from_params(
+        self,
+        description: str,
+        style: str,
+        colors: str,
+        width: int = 1024,
+        height: int = 1024
+    ) -> bytes:
+        """Генерация изображения на основе параметров пользователя"""
+        return await self.image_generator.generate_image_from_params(
+            description=description,
+            style=style,
+            colors=colors,
             width=width,
             height=height
         )
@@ -143,15 +215,9 @@ class AIManager:
         height: int = 1024
     ) -> bytes:
         """Генерация изображения на основе текста поста"""
-        # Сначала создаём промпт
-        image_prompt = await self.content_generator.generate_image_prompt(
+        return await self.image_generator.generate_image_from_post(
             post_text=post_text,
-            image_description=image_description
-        )
-
-        # Затем генерируем изображение
-        return await self.gigachat.generate_image(
-            prompt=image_prompt,
+            image_description=image_description,
             width=width,
             height=height
         )

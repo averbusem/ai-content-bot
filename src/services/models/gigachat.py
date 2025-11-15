@@ -132,6 +132,7 @@ class GigaChatModel:
     async def generate_image(
             self,
             prompt: str,
+            system_prompt: Optional[str] = None,
             width: int = 1024,
             height: int = 1024
     ) -> bytes:
@@ -141,6 +142,19 @@ class GigaChatModel:
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
         }
+
+        messages = []
+        
+        if system_prompt:
+            messages.append({
+                "role": "system",
+                "content": system_prompt
+            })
+        
+        messages.append({
+            "role": "user",
+            "content": f"Создай изображение: {prompt}"
+        })
 
         payload = {
             "model": "GigaChat",
