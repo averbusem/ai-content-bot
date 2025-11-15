@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 from .models.gigachat import GigaChatModel
 from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
+from .image_generator import ImageGenerator
 from .nko_service import nko_service
 
 
@@ -15,6 +16,9 @@ class AIManager:
 
         # Инициализация генератора контента
         self.content_generator = ContentGenerator(self.gigachat)
+
+        # Инициализация генератора изображений
+        self.image_generator = ImageGenerator(self.gigachat)
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
 
@@ -180,8 +184,25 @@ class AIManager:
         width: int = 1024,
         height: int = 1024
     ) -> bytes:
-        return await self.gigachat.generate_image(
+        return await self.image_generator.generate_image(
             prompt=prompt,
+            width=width,
+            height=height
+        )
+
+    async def generate_image_from_params(
+        self,
+        description: str,
+        style: str,
+        colors: str,
+        width: int = 1024,
+        height: int = 1024
+    ) -> bytes:
+        """Генерация изображения на основе параметров пользователя"""
+        return await self.image_generator.generate_image_from_params(
+            description=description,
+            style=style,
+            colors=colors,
             width=width,
             height=height
         )
@@ -194,15 +215,9 @@ class AIManager:
         height: int = 1024
     ) -> bytes:
         """Генерация изображения на основе текста поста"""
-        # Сначала создаём промпт
-        image_prompt = await self.content_generator.generate_image_prompt(
+        return await self.image_generator.generate_image_from_post(
             post_text=post_text,
-            image_description=image_description
-        )
-
-        # Затем генерируем изображение
-        return await self.gigachat.generate_image(
-            prompt=image_prompt,
+            image_description=image_description,
             width=width,
             height=height
         )

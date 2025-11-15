@@ -39,3 +39,9 @@ class TextGenerationStructStates(StatesGroup):
     waiting_results = State()
     editing = State()
 
+
+class ImageGenerationStates(StatesGroup):
+    description = State()  
+    style = State()  
+    colors = State()
+    waiting_results = State()  

@@ -6,6 +6,7 @@ from src.bot.handlers.nko_data import router as router_nko_data
 from src.bot.handlers.help import router as router_help
 from src.bot.handlers.text_generation import router as router_text_generation
 from src.bot.handlers.text_generation_struct import router as router_text_generation_struct
+from src.bot.handlers.image_generation import router as router_image_generation
 
 
 router = Router()
@@ -18,5 +19,6 @@ def get_handlers_router() -> Router:
     router.include_router(router_help)
     router.include_router(router_text_generation)
     router.include_router(router_text_generation_struct)
+    router.include_router(router_image_generation)
 
     return router

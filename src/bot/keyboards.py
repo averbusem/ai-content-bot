@@ -199,3 +199,42 @@ def struct_form_skip_keyboard() -> InlineKeyboardMarkup:
     
     builder.adjust(1)
     return builder.as_markup()
+
+
+def image_style_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="📸 Реалистичное фото", callback_data="image_style:realistic"))
+    builder.add(InlineKeyboardButton(text="🎨 Иллюстрация/рисунок", callback_data="image_style:illustration"))
+    builder.add(InlineKeyboardButton(text="📱 Минимализм", callback_data="image_style:minimalism"))
+    builder.add(InlineKeyboardButton(text="🎭 Постер/афиша", callback_data="image_style:poster"))
+    builder.add(InlineKeyboardButton(text="💼 Деловой стиль", callback_data="image_style:business"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def image_colors_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="🔴 Тёплые (красный, оранжевый, жёлтый)", callback_data="image_colors:warm"))
+    builder.add(InlineKeyboardButton(text="🔵 Холодные (синий, голубой, зелёный)", callback_data="image_colors:cold"))
+    builder.add(InlineKeyboardButton(text="🌈 Яркие и контрастные", callback_data="image_colors:bright"))
+    builder.add(InlineKeyboardButton(text="⚪ Нейтральные и пастельные", callback_data="image_colors:neutral"))
+    builder.add(InlineKeyboardButton(text="💡 На ваш выбор (ИИ сам подберёт)", callback_data="image_colors:auto"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def image_generation_results_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="✅ Всё отлично, спасибо!", callback_data="image_result:ok"))
+    builder.add(InlineKeyboardButton(text="✏️ Изменить", callback_data="image_result:edit"))
+    builder.add(InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
