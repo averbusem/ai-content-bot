@@ -2,7 +2,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from src.bot.keyboards import main_menu_keyboard, back_to_menu_keyboard, text_generation_method_keyboard
-from src.bot.states import MainMenuStates, TextGenerationStates
+from src.bot.states import MainMenuStates, TextGenerationStates, TextEditorStates
 
 router = Router()
 
@@ -31,9 +31,10 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
 @router.callback_query(F.data == "main_menu:text_editor")
 async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
+    await state.set_state(TextEditorStates.post_input)
     return await callback.message.edit_text(
         "✏️ Редактор текста\n\n"
-        "Реализация позже.",
+        "Пришлите Ваш пост и мы исправим все ошибки!",
         reply_markup=back_to_menu_keyboard()
     )
 

@@ -1,8 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+
+env_path = Path(__file__).parent.parent / '.env'
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+    model_config = SettingsConfigDict(env_file=str(env_path), case_sensitive=True, extra="ignore")
 
     # Telegram Bot
     BOT_TOKEN: str = ""

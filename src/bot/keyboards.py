@@ -112,6 +112,17 @@ def text_generation_results_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def text_redactor_results_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.add(InlineKeyboardButton(text="✅ Всё отлично, спасибо!", callback_data="text_editor:ok"))
+    builder.add(InlineKeyboardButton(text="✏️ Изменить", callback_data="text_editor:edit"))
+    builder.add(InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back"))
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def struct_form_start_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     

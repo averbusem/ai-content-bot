@@ -40,6 +40,13 @@ class TextGenerationStructStates(StatesGroup):
     editing = State()
 
 
+class TextEditorStates(StatesGroup):
+    post_input = State()
+    edit_input = State()
+    waiting_results = State()
+    editing = State()
+
+
 class ImageGenerationStates(StatesGroup):
     description = State()  
     style = State()  

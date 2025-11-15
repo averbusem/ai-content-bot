@@ -206,12 +206,12 @@ class ContentGenerator:
 
     Создай сбалансированный план с разнообразием тем."""
 
-    return await self.model.generate_text(
-        prompt=prompt,
-        system_prompt=system_prompt,
-        temperature=0.7,
-        max_tokens=3000
-    )
+        return await self.model.generate_text(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.7,
+            max_tokens=3000
+        )
 
     async def generate_structured_form_post(
             self,
