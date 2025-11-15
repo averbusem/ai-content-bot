@@ -28,16 +28,6 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
     )
 
 
-@router.callback_query(F.data == "main_menu:image_generation")
-async def image_generation_handler(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
-    return await callback.message.edit_text(
-        "🎨 Генерация картинки\n\n"
-        "Эта функция будет реализована позже.",
-        reply_markup=back_to_menu_keyboard()
-    )
-
-
 @router.callback_query(F.data == "main_menu:text_editor")
 async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
