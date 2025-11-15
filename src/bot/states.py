@@ -2,5 +2,9 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class MainMenuStates(StatesGroup):
-    main = State()
+    main_menu = State()
+
+
+class NKODataStates(StatesGroup):
+    nko_menu = State()
 

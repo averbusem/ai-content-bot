@@ -7,9 +7,9 @@ from src.bot.states import MainMenuStates
 router = Router()
 
 
-@router.callback_query(F.data == "menu:main")
+@router.callback_query(F.data == "main_menu:back")
 async def back_to_main_menu(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(MainMenuStates.main)
+    await state.set_state(MainMenuStates.main_menu)
     await callback.answer()
     return await callback.message.edit_text(
         "👋 Главное меню",
@@ -17,7 +17,7 @@ async def back_to_main_menu(callback: types.CallbackQuery, state: FSMContext):
     )
 
 
-@router.callback_query(F.data == "menu:text_generation")
+@router.callback_query(F.data == "main_menu:text_generation")
 async def text_generation_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     return await callback.message.edit_text(
@@ -27,7 +27,7 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
     )
 
 
-@router.callback_query(F.data == "menu:image_generation")
+@router.callback_query(F.data == "main_menu:image_generation")
 async def image_generation_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     return await callback.message.edit_text(
@@ -37,7 +37,7 @@ async def image_generation_handler(callback: types.CallbackQuery, state: FSMCont
     )
 
 
-@router.callback_query(F.data == "menu:text_editor")
+@router.callback_query(F.data == "main_menu:text_editor")
 async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     return await callback.message.edit_text(
@@ -47,7 +47,7 @@ async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     )
 
 
-@router.callback_query(F.data == "menu:content_plan")
+@router.callback_query(F.data == "main_menu:content_plan")
 async def content_plan_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     return await callback.message.edit_text(
@@ -57,17 +57,7 @@ async def content_plan_handler(callback: types.CallbackQuery, state: FSMContext)
     )
 
 
-@router.callback_query(F.data == "menu:nko_data")
-async def nko_data_handler(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
-    return await callback.message.edit_text(
-        "⚙️ Рассказать об НКО\n\n"
-        "Эта функция будет реализована позже.",
-        reply_markup=back_to_menu_keyboard()
-    )
-
-
-@router.callback_query(F.data == "menu:help")
+@router.callback_query(F.data == "main_menu:help")
 async def help_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     return await callback.message.edit_text(
