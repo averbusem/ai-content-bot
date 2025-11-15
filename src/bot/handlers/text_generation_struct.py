@@ -1,5 +1,6 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
+from aiogram.types import BufferedInputFile
 
 from src.bot.keyboards import (
     back_to_menu_keyboard,
@@ -48,16 +49,16 @@ async def struct_form_start_handler(callback: types.CallbackQuery, state: FSMCon
 @router.message(TextGenerationStructStates.question_1_event, F.text)
 async def question_1_text_handler(message: types.Message, state: FSMContext):
     event_text = message.text.strip()
-    
+
     if not event_text:
         return await message.answer(
             "Пожалуйста, отправьте текст или голосовое сообщение.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     await state.update_data(event=event_text)
     await state.set_state(TextGenerationStructStates.question_2_description)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 2/10</b>\n\n"
         "Опишите событие подробнее.\n\n"
@@ -82,16 +83,16 @@ async def question_1_voice_handler(message: types.Message, state: FSMContext):
             "Пожалуйста, отправьте текстовое сообщение.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     if not event_text:
         return await message.answer(
             "Пожалуйста, отправьте текст или голосовое сообщение.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     await state.update_data(event=event_text)
     await state.set_state(TextGenerationStructStates.question_2_description)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 2/10</b>\n\n"
         "Опишите событие подробнее.\n\n"
@@ -112,16 +113,16 @@ async def question_1_invalid_handler(message: types.Message, state: FSMContext):
 @router.message(TextGenerationStructStates.question_2_description, F.text)
 async def question_2_text_handler(message: types.Message, state: FSMContext):
     description_text = message.text.strip()
-    
+
     if not description_text:
         return await message.answer(
             "Пожалуйста, отправьте текст или голосовое сообщение.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     await state.update_data(description=description_text)
     await state.set_state(TextGenerationStructStates.question_3_goal)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 3/10</b>\n\n"
         "Какова главная цель поста?",
@@ -145,16 +146,16 @@ async def question_2_voice_handler(message: types.Message, state: FSMContext):
             "Пожалуйста, отправьте текстовое сообщение.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     if not description_text:
         return await message.answer(
             "Пожалуйста, отправьте текст или голосовое сообщение.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     await state.update_data(description=description_text)
     await state.set_state(TextGenerationStructStates.question_3_goal)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 3/10</b>\n\n"
         "Какова главная цель поста?",
@@ -174,7 +175,7 @@ async def question_2_invalid_handler(message: types.Message, state: FSMContext):
 @router.callback_query(F.data.startswith("struct_goal:"), TextGenerationStructStates.question_3_goal)
 async def question_3_goal_handler(callback: types.CallbackQuery, state: FSMContext):
     goal_data = callback.data.split(":")[1]
-    
+
     if goal_data == "other":
         await state.set_state(TextGenerationStructStates.question_3_goal_other)
         await callback.answer()
@@ -183,7 +184,7 @@ async def question_3_goal_handler(callback: types.CallbackQuery, state: FSMConte
             "Опишите главную цель поста своими словами:",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     goal_map = {
         "result": "struct_goal:result",
         "volunteers": "struct_goal:volunteers",
@@ -192,12 +193,12 @@ async def question_3_goal_handler(callback: types.CallbackQuery, state: FSMConte
         "thanks": "struct_goal:thanks",
         "announcement": "struct_goal:announcement"
     }
-    
+
     goal_value = goal_map.get(goal_data, f"struct_goal:{goal_data}")
     await state.update_data(goal=goal_value)
     await state.set_state(TextGenerationStructStates.question_4_date)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 4/10</b>\n\n"
         "Когда состоится событие? (Дата и время)\n\n"
@@ -209,16 +210,16 @@ async def question_3_goal_handler(callback: types.CallbackQuery, state: FSMConte
 @router.message(TextGenerationStructStates.question_3_goal_other, F.text)
 async def question_3_goal_other_handler(message: types.Message, state: FSMContext):
     goal_text = message.text.strip()
-    
+
     if not goal_text:
         return await message.answer(
             "Пожалуйста, опишите главную цель поста.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     await state.update_data(goal=f"other:{goal_text}")
     await state.set_state(TextGenerationStructStates.question_4_date)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 4/10</b>\n\n"
         "Когда состоится событие? (Дата и время)\n\n"
@@ -241,7 +242,7 @@ async def question_4_skip_handler(callback: types.CallbackQuery, state: FSMConte
     await state.update_data(date=None)
     await state.set_state(TextGenerationStructStates.question_5_location)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 5/10</b>\n\n"
         "Где состоится событие? (Место проведения)\n\n"
@@ -253,16 +254,16 @@ async def question_4_skip_handler(callback: types.CallbackQuery, state: FSMConte
 @router.message(TextGenerationStructStates.question_4_date, F.text)
 async def question_4_date_handler(message: types.Message, state: FSMContext):
     date_text = message.text.strip()
-    
+
     if not date_text:
         return await message.answer(
             "Пожалуйста, укажите дату и время или нажмите 'Пропустить'.",
             reply_markup=struct_form_skip_keyboard()
         )
-    
+
     await state.update_data(date=date_text)
     await state.set_state(TextGenerationStructStates.question_5_location)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 5/10</b>\n\n"
         "Где состоится событие? (Место проведения)\n\n"
@@ -285,7 +286,7 @@ async def question_5_skip_handler(callback: types.CallbackQuery, state: FSMConte
     await state.update_data(location=None)
     await state.set_state(TextGenerationStructStates.question_6_platform)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 6/10</b>\n\n"
         "На какой площадке будет опубликован пост?",
@@ -296,16 +297,16 @@ async def question_5_skip_handler(callback: types.CallbackQuery, state: FSMConte
 @router.message(TextGenerationStructStates.question_5_location, F.text)
 async def question_5_location_handler(message: types.Message, state: FSMContext):
     location_text = message.text.strip()
-    
+
     if not location_text:
         return await message.answer(
             "Пожалуйста, укажите место проведения или нажмите 'Пропустить'.",
             reply_markup=struct_form_skip_keyboard()
         )
-    
+
     await state.update_data(location=location_text)
     await state.set_state(TextGenerationStructStates.question_6_platform)
-    
+
     return await message.answer(
         "📋 <b>Вопрос 6/10</b>\n\n"
         "На какой площадке будет опубликован пост?",
@@ -328,7 +329,7 @@ async def question_6_platform_handler(callback: types.CallbackQuery, state: FSMC
     await state.update_data(platform=platform_data)
     await state.set_state(TextGenerationStructStates.question_7_audience)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 7/10</b>\n\n"
         "Кто ваша целевая аудитория?",
@@ -343,7 +344,7 @@ async def question_7_audience_handler(callback: types.CallbackQuery, state: FSMC
     await state.update_data(audience=audience_data)
     await state.set_state(TextGenerationStructStates.question_8_style)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 8/10</b>\n\n"
         "Какой стиль текста вам нужен?",
@@ -358,7 +359,7 @@ async def question_8_style_handler(callback: types.CallbackQuery, state: FSMCont
     await state.update_data(style=style_data)
     await state.set_state(TextGenerationStructStates.question_9_length)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 9/10</b>\n\n"
         "Какой объём текста вам нужен?",
@@ -373,7 +374,7 @@ async def question_9_length_handler(callback: types.CallbackQuery, state: FSMCon
     await state.update_data(length=length_data)
     await state.set_state(TextGenerationStructStates.question_10_additional)
     await callback.answer()
-    
+
     return await callback.message.edit_text(
         "📋 <b>Вопрос 10/10</b>\n\n"
         "Есть ли дополнительная информация, которую нужно учесть?\n\n"
@@ -382,108 +383,112 @@ async def question_9_length_handler(callback: types.CallbackQuery, state: FSMCon
     )
 
 
+async def generate_struct_post_with_image(callback_or_message, state: FSMContext, data: dict, user_id: int):
+    is_callback = isinstance(callback_or_message, types.CallbackQuery)
+
+    if is_callback:
+        loading_msg = await callback_or_message.message.answer("⏳ Генерирую пост...")
+    else:
+        loading_msg = await callback_or_message.answer("⏳ Генерирую пост...")
+
+    try:
+        post = await ai_manager.generate_structured_form_post(
+            user_id=user_id,
+            event=data.get("event", ""),
+            description=data.get("description", ""),
+            goal=data.get("goal", "struct_goal:work"),
+            date=data.get("date"),
+            location=data.get("location"),
+            platform=data.get("platform", "universal"),
+            audience=data.get("audience", "broad"),
+            style=data.get("style", "warm"),
+            length=data.get("length", "medium"),
+            additional_info=data.get("additional_info")
+        )
+
+        await loading_msg.edit_text("⏳ Генерирую изображение для поста...")
+
+        image_bytes = await ai_manager.generate_image_from_post(
+            post_text=post
+        )
+
+        await loading_msg.delete()
+        await state.update_data(post=post)
+
+        if is_callback:
+            await callback_or_message.message.answer("✨ <b>Готово! Ваш пост:</b>")
+            await callback_or_message.message.answer(f"{post}")
+
+            image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
+            await callback_or_message.message.answer_photo(
+                photo=image_file,
+                caption="🖼 Изображение для вашего поста"
+            )
+
+            return await callback_or_message.message.answer(
+                "Выберите действие",
+                reply_markup=text_generation_results_keyboard()
+            )
+        else:
+            await callback_or_message.answer("✨ <b>Готово! Ваш пост:</b>")
+            await callback_or_message.answer(f"{post}")
+
+            image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
+            await callback_or_message.answer_photo(
+                photo=image_file,
+                caption="🖼 Изображение для вашего поста"
+            )
+
+            return await callback_or_message.answer(
+                "Выберите действие",
+                reply_markup=text_generation_results_keyboard()
+            )
+
+    except Exception as e:
+        await loading_msg.delete()
+
+        if is_callback:
+            return await callback_or_message.message.answer(
+                f"❌ Произошла ошибка: {str(e)}",
+                reply_markup=back_to_menu_keyboard()
+            )
+        else:
+            return await callback_or_message.answer(
+                f"❌ Произошла ошибка: {str(e)}",
+                reply_markup=back_to_menu_keyboard()
+            )
+
+
 # Вопрос 10: Дополнительная информация
 @router.callback_query(F.data == "struct_skip:skip", TextGenerationStructStates.question_10_additional)
 async def question_10_skip_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(additional_info=None)
     await state.set_state(TextGenerationStructStates.waiting_results)
     await callback.answer()
-    
-    # Собираем все данные и генерируем пост
+
     data = await state.get_data()
     user_id = callback.from_user.id
-    
-    loading_msg = await callback.message.edit_text("⏳ Генерирую пост...")
-    
-    try:
-        post = await ai_manager.generate_structured_form_post(
-            user_id=user_id,
-            event=data.get("event", ""),
-            description=data.get("description", ""),
-            goal=data.get("goal", "struct_goal:work"),
-            date=data.get("date"),
-            location=data.get("location"),
-            platform=data.get("platform", "universal"),
-            audience=data.get("audience", "broad"),
-            style=data.get("style", "warm"),
-            length=data.get("length", "medium"),
-            additional_info=data.get("additional_info")
-        )
-    except Exception as e:
-        await loading_msg.delete()
-        return await callback.message.answer(
-            f"❌ Произошла ошибка при генерации поста: {str(e)}",
-            reply_markup=back_to_menu_keyboard()
-        )
-    
-    await loading_msg.delete()
-    await state.update_data(post=post)
-    
-    await callback.message.answer(
-        "✨ <b>Готово! Ваш пост:</b>"
-    )
-    await callback.message.answer(
-        f"{post}"
-    )
-    return await callback.message.answer(
-        "Выберите действие",
-        reply_markup=text_generation_results_keyboard()
-    )
+
+    return await generate_struct_post_with_image(callback, state, data, user_id)
 
 
 @router.message(TextGenerationStructStates.question_10_additional, F.text)
 async def question_10_additional_handler(message: types.Message, state: FSMContext):
     additional_text = message.text.strip()
-    
+
     if not additional_text:
         return await message.answer(
             "Пожалуйста, укажите дополнительную информацию или нажмите 'Пропустить'.",
             reply_markup=struct_form_skip_keyboard()
         )
-    
+
     await state.update_data(additional_info=additional_text)
     await state.set_state(TextGenerationStructStates.waiting_results)
-    
-    # Собираем все данные и генерируем пост
+
     data = await state.get_data()
     user_id = message.from_user.id
-    
-    loading_msg = await message.answer("⏳ Генерирую пост...")
-    
-    try:
-        post = await ai_manager.generate_structured_form_post(
-            user_id=user_id,
-            event=data.get("event", ""),
-            description=data.get("description", ""),
-            goal=data.get("goal", "struct_goal:work"),
-            date=data.get("date"),
-            location=data.get("location"),
-            platform=data.get("platform", "universal"),
-            audience=data.get("audience", "broad"),
-            style=data.get("style", "warm"),
-            length=data.get("length", "medium"),
-            additional_info=data.get("additional_info")
-        )
-    except Exception as e:
-        await loading_msg.delete()
-        return await message.answer(
-            f"❌ Произошла ошибка при генерации поста: {str(e)}",
-            reply_markup=back_to_menu_keyboard()
-        )
-    
-    await loading_msg.delete()
-    await state.update_data(post=post)
-    
-    await message.answer(
-        "✨ <b>Готово! Ваш пост:</b>"
-    )
-    await message.answer(
-        f"{post}"
-    )
-    return await message.answer(
-        "Выберите действие",
-        reply_markup=text_generation_results_keyboard()
-    )
+
+    return await generate_struct_post_with_image(message, state, data, user_id)
 
 
 @router.message(TextGenerationStructStates.question_10_additional)
@@ -494,22 +499,63 @@ async def question_10_invalid_handler(message: types.Message, state: FSMContext)
     )
 
 
-# Обработка результатов (те же кнопки, что и в свободном тексте)
+# Обработка результатов
 @router.callback_query(F.data == "text_result:ok", TextGenerationStructStates.waiting_results)
 async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(MainMenuStates.main_menu)
     await callback.answer("Рад был помочь! 🎉")
-    return await callback.message.edit_text(
+    return await callback.message.answer(
         "👋 Главное меню",
         reply_markup=main_menu_keyboard()
     )
+
+
+@router.callback_query(F.data == "text_result:change_image", TextGenerationStructStates.waiting_results)
+async def text_result_change_image_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка кнопки 'Поменять картинку'"""
+    data = await state.get_data()
+    post = data.get("post", "")
+
+    if not post:
+        await callback.answer("❌ Пост не найден", show_alert=True)
+        return
+
+    await callback.answer()
+    loading_msg = await callback.message.answer("⏳ Генерирую новое изображение...")
+
+    try:
+        # Генерируем новое изображение
+        image_bytes = await ai_manager.generate_image_from_post(
+            post_text=post
+        )
+
+        await loading_msg.delete()
+
+        # Отправляем новое изображение
+        image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
+        await callback.message.answer_photo(
+            photo=image_file,
+            caption="🖼 Новое изображение для вашего поста"
+        )
+
+        await callback.message.answer(
+            "Выберите действие",
+            reply_markup=text_generation_results_keyboard()
+        )
+
+    except Exception as e:
+        await loading_msg.delete()
+        await callback.message.answer(
+            f"❌ Ошибка при генерации изображения: {str(e)}",
+            reply_markup=text_generation_results_keyboard()
+        )
 
 
 @router.callback_query(F.data == "text_result:edit", TextGenerationStructStates.waiting_results)
 async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextGenerationStructStates.editing)
     await callback.answer()
-    return await callback.message.edit_text(
+    return await callback.message.answer(
         "✏️ <b>Редактирование поста</b>\n\n"
         "Что нужно изменить в посте? Опишите ваши пожелания.",
         reply_markup=back_to_menu_keyboard()
@@ -519,53 +565,64 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 @router.message(TextGenerationStructStates.editing, F.text)
 async def editing_handler(message: types.Message, state: FSMContext):
     edit_request = message.text.strip()
-    
+
     if not edit_request:
         return await message.answer(
             "Пожалуйста, опишите, что нужно изменить.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     data = await state.get_data()
     original_post = data.get("post", "")
-    
+
     if not original_post:
         return await message.answer(
             "❌ Не найден исходный пост для редактирования.",
             reply_markup=back_to_menu_keyboard()
         )
-    
+
     user_id = message.from_user.id
-    
     loading_msg = await message.answer("⏳ Обновляю пост...")
-    
+
     try:
-        updated_post = await ai_manager.edit_post(
+        # Обновляем пост
+        updated_post = await ai_manager.generate_free_text_post(
             user_id=user_id,
-            original_post=original_post,
-            edit_request=edit_request
+            user_idea=f"Исходный пост:\n{original_post}\n\nИзменения: {edit_request}",
+            style="разговорный"
         )
+
+        await loading_msg.edit_text("⏳ Генерирую новое изображение...")
+
+        # Генерируем новое изображение
+        image_bytes = await ai_manager.generate_image_from_post(
+            post_text=updated_post
+        )
+
+        await loading_msg.delete()
+        await state.update_data(post=updated_post)
+        await state.set_state(TextGenerationStructStates.waiting_results)
+
+        await message.answer("✨ <b>Пост обновлён:</b>")
+        await message.answer(f"{updated_post}")
+
+        image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
+        await message.answer_photo(
+            photo=image_file,
+            caption="🖼 Обновлённое изображение для поста"
+        )
+
+        return await message.answer(
+            "Выберите действие",
+            reply_markup=text_generation_results_keyboard()
+        )
+
     except Exception as e:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при обновлении поста: {str(e)}",
+            f"❌ Произошла ошибка: {str(e)}",
             reply_markup=back_to_menu_keyboard()
         )
-    
-    await loading_msg.delete()
-    await state.update_data(post=updated_post)
-    await state.set_state(TextGenerationStructStates.waiting_results)
-
-    await message.answer(
-        "✨ <b>Пост обновлён:</b>"
-    )
-    await message.answer(
-        f"{updated_post}"
-    )
-    return await message.answer(
-        "Выберите действие",
-        reply_markup=text_generation_results_keyboard()
-    )
 
 
 @router.message(TextGenerationStructStates.editing)

@@ -106,6 +106,7 @@ def text_generation_results_keyboard() -> InlineKeyboardMarkup:
     
     builder.add(InlineKeyboardButton(text="✅ Всё отлично, спасибо!", callback_data="text_result:ok"))
     builder.add(InlineKeyboardButton(text="✏️ Изменить", callback_data="text_result:edit"))
+    builder.add(InlineKeyboardButton(text="🔄 Поменять картинку", callback_data="text_result:change_image"))
     builder.add(InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back"))
     
     builder.adjust(1)
