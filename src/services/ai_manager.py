@@ -66,6 +66,41 @@ class AIManager:
             style=style
         )
 
+    async def generate_structured_form_post(
+        self,
+        user_id: int,
+        event: str,
+        description: str,
+        goal: str,
+        date: Optional[str] = None,
+        location: Optional[str] = None,
+        platform: str = "universal",
+        audience: str = "broad",
+        style: str = "warm",
+        length: str = "medium",
+        additional_info: Optional[str] = None
+    ) -> str:
+        """Генерация поста на основе структурированной формы (10 вопросов)"""
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
+        else:
+            self.content_generator.ngo_info = None
+
+        return await self.content_generator.generate_structured_form_post(
+            event=event,
+            description=description,
+            goal=goal,
+            date=date,
+            location=location,
+            platform=platform,
+            audience=audience,
+            style=style,
+            length=length,
+            additional_info=additional_info
+        )
+
     async def generate_post_from_example(
         self,
         user_id: int,

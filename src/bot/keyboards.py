@@ -110,3 +110,92 @@ def text_generation_results_keyboard() -> InlineKeyboardMarkup:
     
     builder.adjust(1)
     return builder.as_markup()
+
+
+def struct_form_start_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="▶️ Начать", callback_data="struct_form:start"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def struct_form_goal_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="📣 Результат", callback_data="struct_goal:result"))
+    builder.add(InlineKeyboardButton(text="🙋 Волонтёры", callback_data="struct_goal:volunteers"))
+    builder.add(InlineKeyboardButton(text="💰 Пожертвования", callback_data="struct_goal:donations"))
+    builder.add(InlineKeyboardButton(text="✨ Работа организации", callback_data="struct_goal:work"))
+    builder.add(InlineKeyboardButton(text="❤️ Благодарность", callback_data="struct_goal:thanks"))
+    builder.add(InlineKeyboardButton(text="📅 Анонс", callback_data="struct_goal:announcement"))
+    builder.add(InlineKeyboardButton(text="✏️ Другое", callback_data="struct_goal:other"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def struct_form_platform_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="💬 Telegram", callback_data="struct_platform:telegram"))
+    builder.add(InlineKeyboardButton(text="🖋️ ВКонтакте", callback_data="struct_platform:vk"))
+    builder.add(InlineKeyboardButton(text="🌐 Универсально", callback_data="struct_platform:universal"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def struct_form_audience_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="👥 Местные жители", callback_data="struct_audience:locals"))
+    builder.add(InlineKeyboardButton(text="🎓 Молодёжь", callback_data="struct_audience:youth"))
+    builder.add(InlineKeyboardButton(text="💸 Доноры", callback_data="struct_audience:donors"))
+    builder.add(InlineKeyboardButton(text="🤝 Волонтёры", callback_data="struct_audience:volunteers"))
+    builder.add(InlineKeyboardButton(text="📰 СМИ", callback_data="struct_audience:media"))
+    builder.add(InlineKeyboardButton(text="🌍 Широкая аудитория", callback_data="struct_audience:broad"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def struct_form_style_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="❤️ Тёплый", callback_data="struct_style:warm"))
+    builder.add(InlineKeyboardButton(text="📊 С фактами", callback_data="struct_style:facts"))
+    builder.add(InlineKeyboardButton(text="💬 Просто", callback_data="struct_style:simple"))
+    builder.add(InlineKeyboardButton(text="🧭 Официально", callback_data="struct_style:formal"))
+    builder.add(InlineKeyboardButton(text="🔥 Эмоционально", callback_data="struct_style:emotional"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def struct_form_length_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="✂️ Коротко", callback_data="struct_length:short"))
+    builder.add(InlineKeyboardButton(text="📄 Средне", callback_data="struct_length:medium"))
+    builder.add(InlineKeyboardButton(text="📚 Подробно", callback_data="struct_length:long"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def struct_form_skip_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(text="⏭️ Пропустить", callback_data="struct_skip:skip"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+    
+    builder.adjust(1)
+    return builder.as_markup()
