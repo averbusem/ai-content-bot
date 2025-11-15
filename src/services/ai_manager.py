@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 from .models.gigachat import GigaChatModel
 from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
+from .nko_service import nko_service
 
 
 class AIManager:
@@ -15,16 +16,6 @@ class AIManager:
         # Инициализация генератора контента
         self.content_generator = ContentGenerator(self.gigachat)
 
-        # Хранилище информации об НКО для каждого пользователя
-        self.user_ngo_info: Dict[int, Dict[str, Any]] = {}
-
-    def set_user_ngo_info(self, user_id: int, ngo_info: Dict[str, Any]):
-        self.user_ngo_info[user_id] = ngo_info
-        self.content_generator.set_ngo_info(ngo_info)
-
-    def get_user_ngo_info(self, user_id: int) -> Optional[Dict[str, Any]]:
-        return self.user_ngo_info.get(user_id)
-
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
 
     async def generate_free_text_post(
@@ -35,9 +26,10 @@ class AIManager:
         additional_info: Optional[str] = None
     ) -> str:
         """Генерация свободного текста поста"""
-        # Устанавливаем контекст НКО если есть
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -58,8 +50,10 @@ class AIManager:
         style: str = "разговорный"
     ) -> str:
         """Генерация структурированного поста"""
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -80,8 +74,10 @@ class AIManager:
         style: Optional[str] = None
     ) -> str:
         """Генерация поста на основе примера"""
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
@@ -109,9 +105,11 @@ class AIManager:
         posts_per_week: int,
         preferences: Optional[str] = None
     ) -> str:
-        """Создание контент-плана !!! ДОРАБОТАТЬ !!!"""
-        if user_id in self.user_ngo_info:
-            self.content_generator.set_ngo_info(self.user_ngo_info[user_id])
+        """Создание контент-плана"""
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
         else:
             self.content_generator.ngo_info = None
 
