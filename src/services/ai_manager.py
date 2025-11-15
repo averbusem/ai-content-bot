@@ -87,6 +87,24 @@ class AIManager:
             style=style
         )
 
+    async def edit_post(
+        self,
+        user_id: int,
+        original_post: str,
+        edit_request: str
+    ) -> str:
+        """Редактирование поста на основе запроса пользователя"""
+        # Получаем данные НКО из Redis
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
+        else:
+            self.content_generator.ngo_info = None
+        return await self.content_generator.edit_post(
+            original_post=original_post,
+            edit_request=edit_request
+        )
+
     async def edit_text(
         self,
         text: str,

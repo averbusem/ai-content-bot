@@ -158,35 +158,30 @@ async def editing_handler(message: types.Message, state: FSMContext):
     
     data = await state.get_data()
     original_post = data.get("post", "")
-    user_text = data.get("user_text", "")
     
-    # Объединяем исходный запрос с уточнением
-    combined_request = f"{user_text}\n\nДополнительно: {edit_request}"
+    if not original_post:
+        return await message.answer(
+            "❌ Не найден исходный пост для редактирования.",
+            reply_markup=back_to_menu_keyboard()
+        )
     
     user_id = message.from_user.id
     
     loading_msg = await message.answer("⏳ Обновляю пост...")
     
     try:
-        # Используем edit_text для редактирования
-        edit_result = await ai_manager.edit_text(
-            text=original_post,
-            edit_focus=edit_request
+        # Используем edit_post для редактирования на основе исходного поста
+        updated_post = await ai_manager.edit_post(
+            user_id=user_id,
+            original_post=original_post,
+            edit_request=edit_request
         )
-        updated_post = edit_result.get("edited_text", original_post)
     except Exception as e:
-        # Если редактирование не сработало, генерируем заново
-        try:
-            updated_post = await ai_manager.generate_free_text_post(
-                user_id=user_id,
-                user_idea=combined_request
-            )
-        except Exception as e2:
-            await loading_msg.delete()
-            return await message.answer(
-                f"❌ Произошла ошибка при обновлении поста: {str(e2)}",
-                reply_markup=back_to_menu_keyboard()
-            )
+        await loading_msg.delete()
+        return await message.answer(
+            f"❌ Произошла ошибка при обновлении поста: {str(e)}",
+            reply_markup=back_to_menu_keyboard()
+        )
     
     await loading_msg.delete()
     
