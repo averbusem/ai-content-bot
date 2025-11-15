@@ -158,7 +158,12 @@ class GigaChatModel:
 
         payload = {
             "model": "GigaChat",
-            "messages": messages,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"Создай изображение: {prompt}. Оно обязано быть нарисованным в стиле 2D, это не должно выглядеть как фотография"
+                }
+            ],
             "function_call": "auto",
             "width": width,
             "height": height
