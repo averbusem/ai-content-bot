@@ -243,10 +243,23 @@ def image_colors_keyboard() -> InlineKeyboardMarkup:
 
 def image_generation_results_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    
-    builder.add(InlineKeyboardButton(text="✅ Всё отлично, спасибо!", callback_data="image_result:ok"))
+
+    builder.add(InlineKeyboardButton(text="✅ Всё отлично", callback_data="image_result:ok"))
+    builder.add(InlineKeyboardButton(text="🔄 Перегенерировать", callback_data="image_result:regenerate"))
     builder.add(InlineKeyboardButton(text="✏️ Изменить", callback_data="image_result:edit"))
     builder.add(InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back"))
-    
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def image_mode_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.add(InlineKeyboardButton(text="✨ Создать новое", callback_data="image_mode:create"))
+    builder.add(InlineKeyboardButton(text="✏️ Редактировать", callback_data="image_mode:edit"))
+    builder.add(InlineKeyboardButton(text="📋 По примеру", callback_data="image_mode:example"))
+    builder.add(InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back"))
+
     builder.adjust(1)
     return builder.as_markup()

@@ -8,16 +8,9 @@ from .nko_service import nko_service
 
 class AIManager:
     def __init__(self):
-        # Инициализация GigaChat
         self.gigachat = GigaChatModel()
-
-        # Инициализация Salute Speech
         self.salute_speech = SaluteSpeechModel()
-
-        # Инициализация генератора контента
         self.content_generator = ContentGenerator(self.gigachat)
-
-        # Инициализация генератора изображений
         self.image_generator = ImageGenerator(self.gigachat)
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
@@ -30,7 +23,6 @@ class AIManager:
         additional_info: Optional[str] = None
     ) -> str:
         """Генерация свободного текста поста"""
-        # Получаем данные НКО из Redis
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:
             self.content_generator.set_ngo_info(ngo_info)
@@ -54,7 +46,6 @@ class AIManager:
         style: str = "разговорный"
     ) -> str:
         """Генерация структурированного поста"""
-        # Получаем данные НКО из Redis
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:
             self.content_generator.set_ngo_info(ngo_info)
@@ -85,7 +76,6 @@ class AIManager:
         additional_info: Optional[str] = None
     ) -> str:
         """Генерация поста на основе структурированной формы (10 вопросов)"""
-        # Получаем данные НКО из Redis
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:
             self.content_generator.set_ngo_info(ngo_info)
@@ -113,7 +103,6 @@ class AIManager:
         style: Optional[str] = None
     ) -> str:
         """Генерация поста на основе примера"""
-        # Получаем данные НКО из Redis
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:
             self.content_generator.set_ngo_info(ngo_info)
@@ -133,7 +122,6 @@ class AIManager:
         edit_request: str
     ) -> str:
         """Редактирование поста на основе запроса пользователя"""
-        # Получаем данные НКО из Redis
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:
             self.content_generator.set_ngo_info(ngo_info)
@@ -163,7 +151,6 @@ class AIManager:
         preferences: Optional[str] = None
     ) -> str:
         """Создание контент-плана"""
-        # Получаем данные НКО из Redis
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:
             self.content_generator.set_ngo_info(ngo_info)
@@ -184,6 +171,17 @@ class AIManager:
         width: int = 1024,
         height: int = 1024
     ) -> bytes:
+        """
+        Генерация изображения
+
+        Args:
+            prompt: Промпт для генерации
+            width: Ширина
+            height: Высота
+
+        Returns:
+            Байты изображения
+        """
         return await self.image_generator.generate_image(
             prompt=prompt,
             width=width,
@@ -222,6 +220,58 @@ class AIManager:
             height=height
         )
 
+    async def edit_image(
+        self,
+        source_image_data: bytes,
+        edit_request: str,
+        width: int = 1024,
+        height: int = 1024
+    ) -> bytes:
+        """
+        Редактирование существующего изображения
+
+        Args:
+            source_image_data: Байты исходного изображения
+            edit_request: Описание требуемых изменений
+            width: Ширина результата
+            height: Высота результата
+
+        Returns:
+            Байты отредактированного изображения
+        """
+        return await self.image_generator.edit_image(
+            source_image_data=source_image_data,
+            edit_request=edit_request,
+            width=width,
+            height=height
+        )
+
+    async def create_image_from_example(
+        self,
+        example_image_data: bytes,
+        creation_request: str,
+        width: int = 1024,
+        height: int = 1024
+    ) -> bytes:
+        """
+        Создание нового изображения на основе примера
+
+        Args:
+            example_image_data: Байты изображения-примера
+            creation_request: Описание того, что нужно создать
+            width: Ширина результата
+            height: Высота результата
+
+        Returns:
+            Байты нового изображения
+        """
+        return await self.image_generator.create_from_example(
+            example_image_data=example_image_data,
+            creation_request=creation_request,
+            width=width,
+            height=height
+        )
+
     # === МЕТОДЫ ДЛЯ РАБОТЫ С АУДИО ===
 
     async def transcribe_voice(
@@ -240,12 +290,9 @@ class AIManager:
     ) -> str:
         return await self.salute_speech.transcribe_from_file(file_path)
 
-    # === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
 
     def clear_conversation_history(self):
-        """Очистка истории диалога"""
         self.gigachat.clear_history()
 
     def get_conversation_history(self):
-        """Получение истории диалога"""
         return self.gigachat.get_history()
