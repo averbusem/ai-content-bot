@@ -5,8 +5,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     
-    builder.add(InlineKeyboardButton(text="📝 Генерация текста", callback_data="main_menu:text_generation"))
-    builder.add(InlineKeyboardButton(text="🎨 Генерация картинки", callback_data="main_menu:image_generation"))
+    builder.add(InlineKeyboardButton(text="📝 Создание поста", callback_data="main_menu:text_generation"))
+    builder.add(InlineKeyboardButton(text="🎨 Создание картинки", callback_data="main_menu:image_generation"))
     builder.add(InlineKeyboardButton(text="✏️ Редактор текста", callback_data="main_menu:text_editor"))
     builder.add(InlineKeyboardButton(text="📅 Контент-план", callback_data="main_menu:content_plan"))
     builder.add(InlineKeyboardButton(text="⚙️ Рассказать об НКО", callback_data="main_menu:nko_data"))
@@ -234,7 +234,7 @@ def image_colors_keyboard() -> InlineKeyboardMarkup:
     builder.add(InlineKeyboardButton(text="🔵 Холодные (синий, голубой, зелёный)", callback_data="image_colors:cold"))
     builder.add(InlineKeyboardButton(text="🌈 Яркие и контрастные", callback_data="image_colors:bright"))
     builder.add(InlineKeyboardButton(text="⚪ Нейтральные и пастельные", callback_data="image_colors:neutral"))
-    builder.add(InlineKeyboardButton(text="💡 На ваш выбор (ИИ сам подберёт)", callback_data="image_colors:auto"))
+    builder.add(InlineKeyboardButton(text="💡 На ваш выбор (система сама подберёт)", callback_data="image_colors:auto"))
     builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
     
     builder.adjust(1)

@@ -413,6 +413,7 @@ async def image_style_handler(callback: types.CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("image_colors:"))
 async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Handler для выбора цветов и создания изображения"""
     colors = callback.data.split(":")[1]
 
     color_names = {
@@ -420,7 +421,7 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
         "cold": "🔵 Холодные (синий, голубой, зелёный)",
         "bright": "🌈 Яркие и контрастные",
         "neutral": "⚪ Нейтральные и пастельные",
-        "auto": "💡 На ваш выбор (ИИ сам подберёт)"
+        "auto": "💡 На ваш выбор (система сама подберёт)"
     }
 
     await state.update_data(colors=colors, colors_name=color_names.get(colors, colors))
@@ -437,9 +438,10 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
             "❌ Ошибка: не указано описание изображения. Пожалуйста, начните заново.",
             reply_markup=back_to_menu_keyboard()
         )
-
+    
+    # Показываем сообщение о создании
     loading_msg = await callback.message.edit_text(
-        "⏳ Генерирую изображение...\n\n"
+        "⏳ Создаю изображение...\n\n"
         f"<b>Описание:</b> {description}\n"
         f"<b>Стиль:</b> {style_name}\n"
         f"<b>Цвета:</b> {colors_name}"
@@ -512,7 +514,8 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
 
 @router.callback_query(F.data == "image_result:ok")
 async def image_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    await state.clear()
+    """Handler для кнопки 'Всё отлично' после создания изображения"""
+    await state.set_state(MainMenuStates.main_menu)
     await callback.answer("Рад был помочь! 🎉")
     return await callback.message.answer(
         "👋 Главное меню",

@@ -13,7 +13,8 @@ async def back_to_main_menu(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(MainMenuStates.main_menu)  
     await callback.answer()
     return await callback.message.edit_text(
-        "👋 Главное меню",
+        "🏠 Главное меню\n\n"
+        "Выберите действие из списка ниже:",
         reply_markup=main_menu_keyboard()
     )
 
@@ -23,8 +24,8 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
     await state.set_state(TextGenerationStates.method_selection)
     await callback.answer()
     return await callback.message.edit_text(
-        "📝 Генерация текста\n\n"
-        "Выберите способ генерации:",
+        "📝 Создание поста\n\n"
+        "Выберите способ создания:",
         reply_markup=text_generation_method_keyboard()
     )
 

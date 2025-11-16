@@ -45,7 +45,7 @@ async def edit_input_handler(message: types.Message, state: FSMContext):
     await state.update_data(edit_text=edit_text)
     state_data = await state.get_data()
 
-    loading_msg = await message.answer("⏳ Генерирую пост...")
+    loading_msg = await message.answer("⏳ Создаю пост...")
 
     try:
         post = await ai_manager.edit_post(
@@ -56,7 +56,7 @@ async def edit_input_handler(message: types.Message, state: FSMContext):
     except Exception as e:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при генерации поста: {str(e)}",
+            f"❌ Произошла ошибка при создании поста: {str(e)}",
             reply_markup=back_to_menu_keyboard()
         )
 
