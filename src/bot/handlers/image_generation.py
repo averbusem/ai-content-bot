@@ -10,7 +10,7 @@ from src.bot.keyboards import (
     main_menu_keyboard,
     image_mode_keyboard
 )
-from src.bot.states import ImageGenerationStates
+from src.bot.states import ImageGenerationStates, MainMenuStates
 from src.services.ai_manager import AIManager
 router = Router()
 ai_manager = AIManager()
