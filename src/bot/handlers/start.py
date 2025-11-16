@@ -11,6 +11,7 @@ router = Router()
 
 @router.message(CommandStart())
 async def start_cmd(message: types.Message, state: FSMContext):
+    await state.clear()
     await state.set_state(MainMenuStates.main_menu)
     return await message.answer(
         "👋 Привет! Я помогу создать контент для вашей НКО",
