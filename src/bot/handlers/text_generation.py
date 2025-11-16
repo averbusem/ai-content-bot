@@ -33,7 +33,7 @@ async def free_text_handler(callback: types.CallbackQuery, state: FSMContext):
 
 
 async def generate_post_with_image(message: types.Message, state: FSMContext, user_id: int, user_text: str):
-    loading_msg = await message.answer("⏳ Генерирую пост...")
+    loading_msg = await message.answer("⏳ Создаю пост...")
 
     try:
         post = await ai_manager.generate_free_text_post(
@@ -42,7 +42,7 @@ async def generate_post_with_image(message: types.Message, state: FSMContext, us
             style="разговорный"
         )
 
-        await loading_msg.edit_text("⏳ Генерирую изображение для поста...")
+        await loading_msg.edit_text("⏳ Создаю изображение для поста...")
 
         image_bytes = await ai_manager.generate_image_from_post(
             post_text=post
@@ -93,7 +93,7 @@ async def free_text_input_handler(message: types.Message, state: FSMContext):
 
 @router.message(TextGenerationStates.free_text_input, F.voice)
 async def free_text_voice_handler(message: types.Message, state: FSMContext):
-    transcribe_msg = await message.answer("⏳ Транскрибирую...")
+    transcribe_msg = await message.answer("⏳ Распознаю речь...")
 
     try:
         file = await message.bot.get_file(message.voice.file_id)
@@ -124,7 +124,7 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
     except Exception as e:
         await transcribe_msg.delete()
         return await message.answer(
-            f"❌ Ошибка при транскрибации: {str(e)}",
+            f"❌ Ошибка при распознавании речи: {str(e)}",
             reply_markup=back_to_menu_keyboard()
         )
 
@@ -158,7 +158,7 @@ async def text_result_change_image_handler(callback: types.CallbackQuery, state:
         return
 
     await callback.answer()
-    loading_msg = await callback.message.answer("⏳ Генерирую новое изображение...")
+    loading_msg = await callback.message.answer("⏳ Создаю новое изображение...")
 
     try:
         image_bytes = await ai_manager.generate_image_from_post(
@@ -181,7 +181,7 @@ async def text_result_change_image_handler(callback: types.CallbackQuery, state:
     except Exception as e:
         await loading_msg.delete()
         await callback.message.answer(
-            f"❌ Ошибка при генерации изображения: {str(e)}",
+            f"❌ Ошибка при создании изображения: {str(e)}",
             reply_markup=text_generation_results_keyboard()
         )
 
@@ -227,7 +227,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
             style="разговорный"
         )
 
-        await loading_msg.edit_text("⏳ Генерирую новое изображение...")
+        await loading_msg.edit_text("⏳ Создаю новое изображение...")
 
         image_bytes = await ai_manager.generate_image_from_post(
             post_text=updated_post

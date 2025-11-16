@@ -17,12 +17,12 @@ ai_manager = AIManager()
 
 @router.callback_query(F.data == "main_menu:image_generation")
 async def image_generation_handler(callback: types.CallbackQuery, state: FSMContext):
-    """Handler для кнопки '🎨 Генерация картинки' из главного меню"""
+    """Handler для кнопки '🎨 Создание картинки' из главного меню"""
     await state.set_state(ImageGenerationStates.description)
     await callback.answer()
     return await callback.message.edit_text(
-        "🎨 <b>Генерация картинки</b>\n\n"
-        "Я создам изображение через нейросеть по вашему описанию.\n\n"
+        "🎨 <b>Создание картинки</b>\n\n"
+        "Я создам изображение по вашему описанию.\n\n"
         "<b>Вопрос 1/3:</b> Опишите, какую картинку нужно создать, или загрузите свои файлы для обработки.\n\n"
         "<i>💡 Чем подробнее описание, тем лучше результат!</i>\n\n"
         "<i>Пример хорошего описания:</i>\n"
@@ -162,7 +162,7 @@ async def image_style_handler(callback: types.CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("image_colors:"))
 async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext):
-    """Handler для выбора цветов и генерации изображения"""
+    """Handler для выбора цветов и создания изображения"""
     colors = callback.data.split(":")[1]
     
     color_names = {
@@ -170,7 +170,7 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
         "cold": "🔵 Холодные (синий, голубой, зелёный)",
         "bright": "🌈 Яркие и контрастные",
         "neutral": "⚪ Нейтральные и пастельные",
-        "auto": "💡 На ваш выбор (ИИ сам подберёт)"
+        "auto": "💡 На ваш выбор (система сама подберёт)"
     }
     
     await state.update_data(colors=colors, colors_name=color_names.get(colors, colors))
@@ -189,9 +189,9 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
             reply_markup=back_to_menu_keyboard()
         )
     
-    # Показываем сообщение о генерации
+    # Показываем сообщение о создании
     loading_msg = await callback.message.edit_text(
-        "⏳ Генерирую изображение...\n\n"
+        "⏳ Создаю изображение...\n\n"
         f"<b>Описание:</b> {description}\n"
         f"<b>Стиль:</b> {style_name}\n"
         f"<b>Цвета:</b> {colors_name}"
@@ -200,7 +200,7 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
     await state.set_state(ImageGenerationStates.waiting_results)
     
     try:
-        # Генерируем изображение
+        # Создаём изображение
         image_bytes = await ai_manager.generate_image_from_params(
             description=description,
             style=style,
@@ -234,7 +234,7 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
     except Exception as e:
         await loading_msg.delete()
         return await callback.message.answer(
-            f"❌ Произошла ошибка при генерации изображения: {str(e)}\n\n"
+            f"❌ Произошла ошибка при создании изображения: {str(e)}\n\n"
             "Попробуйте ещё раз или вернитесь в главное меню.",
             reply_markup=back_to_menu_keyboard()
         )
@@ -242,7 +242,7 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
 
 @router.callback_query(F.data == "image_result:ok")
 async def image_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    """Handler для кнопки 'Всё отлично' после генерации изображения"""
+    """Handler для кнопки 'Всё отлично' после создания изображения"""
     await state.set_state(MainMenuStates.main_menu)
     await callback.answer("Рад был помочь! 🎉")
     return await callback.message.edit_text(
@@ -253,12 +253,12 @@ async def image_result_ok_handler(callback: types.CallbackQuery, state: FSMConte
 
 @router.callback_query(F.data == "image_result:edit")
 async def image_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
-    """Handler для кнопки 'Изменить' после генерации изображения"""
+    """Handler для кнопки 'Изменить' после создания изображения"""
     await state.set_state(ImageGenerationStates.description)
     await callback.answer()
     return await callback.message.edit_text(
-        "🎨 <b>Генерация картинки</b>\n\n"
-        "Я создам изображение через нейросеть по вашему описанию.\n\n"
+        "🎨 <b>Создание картинки</b>\n\n"
+        "Я создам изображение по вашему описанию.\n\n"
         "<b>Вопрос 1/3:</b> Опишите, какую картинку нужно создать, или загрузите свои файлы для обработки.\n\n"
         "<i>Примеры описаний:</i>\n"
         "• \"Волонтёры раздают новогодние подарки детям\"\n"
