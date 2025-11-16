@@ -9,7 +9,8 @@ router = Router()
 
 @router.callback_query(F.data == "main_menu:back")
 async def back_to_main_menu(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(MainMenuStates.main_menu)
+    await state.clear()
+    await state.set_state(MainMenuStates.main_menu)  
     await callback.answer()
     return await callback.message.edit_text(
         "👋 Главное меню",

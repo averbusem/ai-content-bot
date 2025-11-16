@@ -40,6 +40,7 @@ async def struct_form_start_handler(callback: types.CallbackQuery, state: FSMCon
     return await callback.message.edit_text(
         "📋 <b>Вопрос 1/10</b>\n\n"
         "О каком событии пост?\n\n"
+        "Например: IT-хакатон 'Энергия добра'.\n\n"
         "Вы можете написать текст или отправить голосовое сообщение.",
         reply_markup=back_to_menu_keyboard()
     )
@@ -62,43 +63,60 @@ async def question_1_text_handler(message: types.Message, state: FSMContext):
     return await message.answer(
         "📋 <b>Вопрос 2/10</b>\n\n"
         "Опишите событие подробнее.\n\n"
-        "Что произойдёт? Кто участвует? Какие детали важны?",
+        "Расскажите о формате, участниках, дате и времени, ключевых деталях и результатах.\n\n"
+        "<i>Например: событие проходило с 14 по 16 ноября в онлайн формате, участвовали более 300 человек, "
+        "было 3 кейса: телеграм-бот для создания ИИ контента, онлайн-навигатор по социальным проектам, "
+        "информационный портал с интерактивной картой.</i>",
         reply_markup=back_to_menu_keyboard()
     )
 
 
 @router.message(TextGenerationStructStates.question_1_event, F.voice)
 async def question_1_voice_handler(message: types.Message, state: FSMContext):
-    if message.voice and hasattr(message.voice, 'file_id'):
-        if message.caption:
-            event_text = message.caption.strip()
-        else:
+    if not message.voice:
+        return await message.answer(
+            "Пожалуйста, отправьте голосовое сообщение.",
+            reply_markup=back_to_menu_keyboard()
+        )
+
+    transcribe_msg = await message.answer("⏳ Транскрибирую...")
+
+    try:
+        file = await message.bot.get_file(message.voice.file_id)
+        audio_file = await message.bot.download_file(file.file_path)
+        audio_data = audio_file.read()
+
+        event_text = await ai_manager.transcribe_voice(
+            audio_data=audio_data,
+            audio_format="opus"
+        )
+
+        await transcribe_msg.delete()
+
+        if not event_text or not event_text.strip():
             return await message.answer(
-                "Голосовые сообщения пока поддерживаются только с текстовым описанием. "
-                "Пожалуйста, отправьте текст или добавьте описание к голосовому сообщению.",
+                "Не удалось распознать речь. Попробуйте отправить голосовое сообщение ещё раз.",
                 reply_markup=back_to_menu_keyboard()
             )
-    else:
+
+        await message.answer(f"Вы сказали: {event_text}")
+
+        await state.update_data(event=event_text.strip())
+        await state.set_state(TextGenerationStructStates.question_2_description)
+
         return await message.answer(
-            "Пожалуйста, отправьте текстовое сообщение.",
+            "📋 <b>Вопрос 2/10</b>\n\n"
+            "Опишите событие подробнее.\n\n"
+            "Что произойдёт? Кто участвует? Какие детали важны?",
             reply_markup=back_to_menu_keyboard()
         )
 
-    if not event_text:
+    except Exception as e:
+        await transcribe_msg.delete()
         return await message.answer(
-            "Пожалуйста, отправьте текст или голосовое сообщение.",
+            f"❌ Ошибка при транскрибации: {str(e)}",
             reply_markup=back_to_menu_keyboard()
         )
-
-    await state.update_data(event=event_text)
-    await state.set_state(TextGenerationStructStates.question_2_description)
-
-    return await message.answer(
-        "📋 <b>Вопрос 2/10</b>\n\n"
-        "Опишите событие подробнее.\n\n"
-        "Что произойдёт? Кто участвует? Какие детали важны?",
-        reply_markup=back_to_menu_keyboard()
-    )
 
 
 @router.message(TextGenerationStructStates.question_1_event)
@@ -132,35 +150,49 @@ async def question_2_text_handler(message: types.Message, state: FSMContext):
 
 @router.message(TextGenerationStructStates.question_2_description, F.voice)
 async def question_2_voice_handler(message: types.Message, state: FSMContext):
-    if message.voice and hasattr(message.voice, 'file_id'):
-        if message.caption:
-            description_text = message.caption.strip()
-        else:
+    if not message.voice:
+        return await message.answer(
+            "Пожалуйста, отправьте голосовое сообщение.",
+            reply_markup=back_to_menu_keyboard()
+        )
+
+    transcribe_msg = await message.answer("⏳ Транскрибирую...")
+
+    try:
+        file = await message.bot.get_file(message.voice.file_id)
+        audio_file = await message.bot.download_file(file.file_path)
+        audio_data = audio_file.read()
+
+        description_text = await ai_manager.transcribe_voice(
+            audio_data=audio_data,
+            audio_format="opus"
+        )
+
+        await transcribe_msg.delete()
+
+        if not description_text or not description_text.strip():
             return await message.answer(
-                "Голосовые сообщения пока поддерживаются только с текстовым описанием. "
-                "Пожалуйста, отправьте текст или добавьте описание к голосовому сообщению.",
+                "Не удалось распознать речь. Попробуйте отправить голосовое сообщение ещё раз.",
                 reply_markup=back_to_menu_keyboard()
             )
-    else:
+
+        await message.answer(f"Вы сказали: {description_text}")
+
+        await state.update_data(description=description_text.strip())
+        await state.set_state(TextGenerationStructStates.question_3_goal)
+
         return await message.answer(
-            "Пожалуйста, отправьте текстовое сообщение.",
-            reply_markup=back_to_menu_keyboard()
+            "📋 <b>Вопрос 3/10</b>\n\n"
+            "Какова главная цель поста?",
+            reply_markup=struct_form_goal_keyboard()
         )
 
-    if not description_text:
+    except Exception as e:
+        await transcribe_msg.delete()
         return await message.answer(
-            "Пожалуйста, отправьте текст или голосовое сообщение.",
+            f"❌ Ошибка при транскрибации: {str(e)}",
             reply_markup=back_to_menu_keyboard()
         )
-
-    await state.update_data(description=description_text)
-    await state.set_state(TextGenerationStructStates.question_3_goal)
-
-    return await message.answer(
-        "📋 <b>Вопрос 3/10</b>\n\n"
-        "Какова главная цель поста?",
-        reply_markup=struct_form_goal_keyboard()
-    )
 
 
 @router.message(TextGenerationStructStates.question_2_description)
@@ -201,8 +233,8 @@ async def question_3_goal_handler(callback: types.CallbackQuery, state: FSMConte
 
     return await callback.message.edit_text(
         "📋 <b>Вопрос 4/10</b>\n\n"
-        "Когда состоится событие? (Дата и время)\n\n"
-        "<i>Например: 15 декабря в 18:00</i>",
+        "Дата и время события??\n\n"
+        "<i>Например: 15 декабря в 18:00 или с 14 по 16 ноября</i>",
         reply_markup=struct_form_skip_keyboard()
     )
 
@@ -222,8 +254,8 @@ async def question_3_goal_other_handler(message: types.Message, state: FSMContex
 
     return await message.answer(
         "📋 <b>Вопрос 4/10</b>\n\n"
-        "Когда состоится событие? (Дата и время)\n\n"
-        "<i>Например: 15 декабря в 18:00</i>",
+        "Дата и время события??\n\n"
+        "<i>Например: 15 декабря в 18:00 или с 14 по 16 ноября</i>",
         reply_markup=struct_form_skip_keyboard()
     )
 
@@ -246,7 +278,7 @@ async def question_4_skip_handler(callback: types.CallbackQuery, state: FSMConte
     return await callback.message.edit_text(
         "📋 <b>Вопрос 5/10</b>\n\n"
         "Где состоится событие? (Место проведения)\n\n"
-        "<i>Например: Парк Горького, главная сцена</i>",
+        "<i>Например: Парк Горького или онлайн</i>",
         reply_markup=struct_form_skip_keyboard()
     )
 

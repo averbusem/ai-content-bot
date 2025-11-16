@@ -19,10 +19,15 @@ async def free_text_handler(callback: types.CallbackQuery, state: FSMContext):
         "Опишите, какой пост вы хотите создать. Вы можете:\n"
         "• Написать текст\n"
         "• Отправить голосовое сообщение\n\n"
-        "<i>Примеры запросов:</i>\n"
-        "• \"Создай пост о нашем благотворительном концерте\"\n"
-        "• \"Нужен пост для привлечения волонтёров\"\n"
-        "• \"Расскажи о нашей новой программе помощи\"",
+        "<i>💡 Чем подробнее описание, тем лучше результат!</i>\n\n"
+        "<i>Пример хорошего запроса:</i>\n"
+        "\"Создай пост о том, что мы провели IT-хакатон 'Энергия добра'. "
+        "Он проходил в онлайн формате, в нём участвовали более 300 человек.\n"
+        "Было 3 кейса:\n"
+        "Телеграм-бот для создания ИИ контента (постов)\n"
+        "Онлайн-навигатор по социальным проектам и НКО в городах присутствия Росатома"
+        "в виде одностраничного сайта \n"
+        "Информационный портал для НКО городов Росатома с интерактивной картой.\"",
         reply_markup=back_to_menu_keyboard()
     )
 
@@ -88,26 +93,40 @@ async def free_text_input_handler(message: types.Message, state: FSMContext):
 
 @router.message(TextGenerationStates.free_text_input, F.voice)
 async def free_text_voice_handler(message: types.Message, state: FSMContext):
-    if message.voice and hasattr(message.voice, 'file_id'):
-        if message.caption:
-            user_text = message.caption.strip()
-        else:
-            return await message.answer(
-                "Голосовые сообщения пока поддерживаются только с текстовым описанием. "
-                "Пожалуйста, отправьте текст или добавьте описание к голосовому сообщению.",
-                reply_markup=back_to_menu_keyboard()
-            )
-    else:
-        return await message.answer(
-            "Пожалуйста, отправьте текстовое сообщение.",
-            reply_markup=back_to_menu_keyboard()
+    transcribe_msg = await message.answer("⏳ Транскрибирую...")
+
+    try:
+        file = await message.bot.get_file(message.voice.file_id)
+        audio_file = await message.bot.download_file(file.file_path)
+        audio_data = audio_file.read()
+
+        user_text = await ai_manager.transcribe_voice(
+            audio_data=audio_data,
+            audio_format="opus"
         )
 
-    user_id = message.from_user.id
-    await state.set_state(TextGenerationStates.waiting_results)
-    await state.update_data(user_text=user_text)
+        await transcribe_msg.delete()
 
-    return await generate_post_with_image(message, state, user_id, user_text)
+        if not user_text or not user_text.strip():
+            return await message.answer(
+                "Не удалось распознать речь. Попробуйте отправить голосовое сообщение ещё раз.",
+                reply_markup=back_to_menu_keyboard()
+            )
+
+        await message.answer(f"Вы сказали: {user_text}")
+
+        user_id = message.from_user.id
+        await state.set_state(TextGenerationStates.waiting_results)
+        await state.update_data(user_text=user_text.strip())
+
+        return await generate_post_with_image(message, state, user_id, user_text.strip())
+
+    except Exception as e:
+        await transcribe_msg.delete()
+        return await message.answer(
+            f"❌ Ошибка при транскрибации: {str(e)}",
+            reply_markup=back_to_menu_keyboard()
+        )
 
 
 @router.message(TextGenerationStates.free_text_input)
@@ -120,6 +139,7 @@ async def free_text_invalid_handler(message: types.Message, state: FSMContext):
 
 @router.callback_query(F.data == "text_result:ok")
 async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
     await state.set_state(MainMenuStates.main_menu)
     await callback.answer("Рад был помочь! 🎉")
     return await callback.message.answer(
