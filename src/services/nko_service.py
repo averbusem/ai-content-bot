@@ -24,7 +24,7 @@ class NKOService:
         data = await redis.get(key)
         if data:
             if isinstance(data, bytes):
-                data = data.decode('utf-8')
+                data = data.decode("utf-8")
             return json.loads(data)
         return None
 
@@ -46,4 +46,3 @@ class NKOService:
 
 
 nko_service = NKOService()
-

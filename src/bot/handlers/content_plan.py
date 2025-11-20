@@ -18,16 +18,14 @@ async def duration_input_handler(message: types.Message, state: FSMContext):
 
         if duration_days < 1:
             return await message.answer(
-                "❌ Количество дней должно быть больше 0.\n"
-                "Попробуйте ещё раз:",
-                reply_markup=back_to_menu_keyboard()
+                "❌ Количество дней должно быть больше 0.\nПопробуйте ещё раз:",
+                reply_markup=back_to_menu_keyboard(),
             )
 
         if duration_days > 90:
             return await message.answer(
-                "❌ Максимальный период - 90 дней.\n"
-                "Попробуйте указать меньше:",
-                reply_markup=back_to_menu_keyboard()
+                "❌ Максимальный период - 90 дней.\nПопробуйте указать меньше:",
+                reply_markup=back_to_menu_keyboard(),
             )
 
         await state.update_data(duration_days=duration_days)
@@ -37,23 +35,21 @@ async def duration_input_handler(message: types.Message, state: FSMContext):
             f"✅ Период: {duration_days} дней\n\n"
             "Сколько постов в неделю планируете публиковать?\n"
             "Укажите число от 1 до 14 (например: 3, 5, 7)",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     except ValueError:
         return await message.answer(
-            "❌ Пожалуйста, введите число (количество дней).\n"
-            "Например: 7, 14 или 30",
-            reply_markup=back_to_menu_keyboard()
+            "❌ Пожалуйста, введите число (количество дней).\nНапример: 7, 14 или 30",
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
 @router.message(ContentPlanStates.duration_input)
 async def duration_invalid_handler(message: types.Message):
     return await message.answer(
-        "❌ Пожалуйста, отправьте число (количество дней).\n"
-        "Например: 7, 14 или 30",
-        reply_markup=back_to_menu_keyboard()
+        "❌ Пожалуйста, отправьте число (количество дней).\nНапример: 7, 14 или 30",
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -66,16 +62,14 @@ async def frequency_input_handler(message: types.Message, state: FSMContext):
 
         if posts_per_week < 1:
             return await message.answer(
-                "❌ Количество постов должно быть больше 0.\n"
-                "Попробуйте ещё раз:",
-                reply_markup=back_to_menu_keyboard()
+                "❌ Количество постов должно быть больше 0.\nПопробуйте ещё раз:",
+                reply_markup=back_to_menu_keyboard(),
             )
 
         if posts_per_week > 14:
             return await message.answer(
-                "❌ Максимум 14 постов в неделю.\n"
-                "Попробуйте указать меньше:",
-                reply_markup=back_to_menu_keyboard()
+                "❌ Максимум 14 постов в неделю.\nПопробуйте указать меньше:",
+                reply_markup=back_to_menu_keyboard(),
             )
 
         await state.update_data(posts_per_week=posts_per_week)
@@ -90,15 +84,14 @@ async def frequency_input_handler(message: types.Message, state: FSMContext):
             "• STEM-образование и популяризация науки\n"
             "• Истории успеха выпускников наших программ\n"
             "• Вовлекающий формат - вопросы, обсуждения, развенчание стереотипов о работе в атомной отрасли\n\n"
-            "Или отправьте <b>\"Нет\"</b>, чтобы создать сбалансированный план.",
-            reply_markup=back_to_menu_keyboard()
+            'Или отправьте <b>"Нет"</b>, чтобы создать сбалансированный план.',
+            reply_markup=back_to_menu_keyboard(),
         )
 
     except ValueError:
         return await message.answer(
-            "❌ Пожалуйста, введите число (количество постов).\n"
-            "Например: 3, 5 или 7",
-            reply_markup=back_to_menu_keyboard()
+            "❌ Пожалуйста, введите число (количество постов).\nНапример: 3, 5 или 7",
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -107,7 +100,7 @@ async def frequency_invalid_handler(message: types.Message):
     return await message.answer(
         "❌ Пожалуйста, отправьте число (количество постов в неделю).\n"
         "Например: 3, 5 или 7",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -115,7 +108,11 @@ async def frequency_invalid_handler(message: types.Message):
 async def preferences_input_handler(message: types.Message, state: FSMContext):
     preferences_text = message.text.strip()
 
-    preferences = None if preferences_text.lower() in ["нет", "не нужно", "без предпочтений"] else preferences_text
+    preferences = (
+        None
+        if preferences_text.lower() in ["нет", "не нужно", "без предпочтений"]
+        else preferences_text
+    )
 
     await state.update_data(preferences=preferences)
     await state.set_state(ContentPlanStates.waiting_results)
@@ -125,16 +122,14 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
     posts_per_week = data.get("posts_per_week")
     user_id = message.from_user.id
 
-    loading_msg = await message.answer(
-        "⏳ Создаю контент-план...\n"
-    )
+    loading_msg = await message.answer("⏳ Создаю контент-план...\n")
 
     try:
         plan = await ai_manager.generate_content_plan(
             user_id=user_id,
             duration_days=duration_days,
             posts_per_week=posts_per_week,
-            preferences=preferences
+            preferences=preferences,
         )
 
         await loading_msg.delete()
@@ -148,15 +143,12 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
             + (f"💡 Предпочтения: {preferences}\n" if preferences else "")
         )
 
-        await message.answer(
-            f"<b>📋 КОНТЕНТ-ПЛАН:</b>\n\n{plan}"
-        )
+        await message.answer(f"<b>📋 КОНТЕНТ-ПЛАН:</b>\n\n{plan}")
 
         await state.clear()
         return await message.answer(
-            "✅ Контент-план создан!\n\n"
-            "Вы можете сохранить его или создать новый.",
-            reply_markup=main_menu_keyboard()
+            "✅ Контент-план создан!\n\nВы можете сохранить его или создать новый.",
+            reply_markup=main_menu_keyboard(),
         )
 
     except Exception as e:
@@ -166,14 +158,13 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
             f"❌ Произошла ошибка при создании контент-плана:\n"
             f"{str(e)}\n\n"
             "Попробуйте ещё раз позже.",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(),
         )
 
 
 @router.message(ContentPlanStates.preferences_input)
 async def preferences_invalid_handler(message: types.Message):
     return await message.answer(
-        "Пожалуйста, опишите ваши предпочтения текстом\n"
-        "или отправьте <b>\"Нет\"</b>.",
-        reply_markup=back_to_menu_keyboard()
+        'Пожалуйста, опишите ваши предпочтения текстом\nили отправьте <b>"Нет"</b>.',
+        reply_markup=back_to_menu_keyboard(),
     )

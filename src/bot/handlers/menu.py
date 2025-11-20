@@ -1,8 +1,17 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
-from src.bot.keyboards import main_menu_keyboard, back_to_menu_keyboard, text_generation_method_keyboard
-from src.bot.states import MainMenuStates, TextGenerationStates, TextEditorStates, ContentPlanStates
+from src.bot.keyboards import (
+    main_menu_keyboard,
+    back_to_menu_keyboard,
+    text_generation_method_keyboard,
+)
+from src.bot.states import (
+    MainMenuStates,
+    TextGenerationStates,
+    TextEditorStates,
+    ContentPlanStates,
+)
 
 router = Router()
 
@@ -10,12 +19,11 @@ router = Router()
 @router.callback_query(F.data == "main_menu:back")
 async def back_to_main_menu(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await state.set_state(MainMenuStates.main_menu)  
+    await state.set_state(MainMenuStates.main_menu)
     await callback.answer()
     return await callback.message.edit_text(
-        "🏠 Главное меню\n\n"
-        "Выберите действие из списка ниже:",
-        reply_markup=main_menu_keyboard()
+        "🏠 Главное меню\n\nВыберите действие из списка ниже:",
+        reply_markup=main_menu_keyboard(),
     )
 
 
@@ -24,9 +32,8 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
     await state.set_state(TextGenerationStates.method_selection)
     await callback.answer()
     return await callback.message.edit_text(
-        "📝 Создание поста\n\n"
-        "Выберите способ создания:",
-        reply_markup=text_generation_method_keyboard()
+        "📝 Создание поста\n\nВыберите способ создания:",
+        reply_markup=text_generation_method_keyboard(),
     )
 
 
@@ -35,9 +42,8 @@ async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.set_state(TextEditorStates.post_input)
     return await callback.message.edit_text(
-        "✏️ Редактор текста\n\n"
-        "Пришлите Ваш пост и мы исправим все ошибки!",
-        reply_markup=back_to_menu_keyboard()
+        "✏️ Редактор текста\n\nПришлите Ваш пост и мы исправим все ошибки!",
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -50,6 +56,5 @@ async def content_plan_start(callback: types.CallbackQuery, state: FSMContext):
         "Контент-план поможет вам регулярно публиковать разнообразный контент.\n\n"
         "На какой период создать план?\n"
         "Укажите количество дней (например: 7, 14, 30)",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
-

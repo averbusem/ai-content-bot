@@ -10,7 +10,9 @@ from src.bot.handlers import get_handlers_router
 from src.bot.middlewares import RemoveLastKeyboardMiddleware
 from src.config import settings
 
-bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(
+    token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
 storage = RedisStorage.from_url(settings.REDIS_URL)
 dp = Dispatcher(storage=storage)
 
@@ -19,6 +21,7 @@ dp.callback_query.middleware(RemoveLastKeyboardMiddleware())
 
 dp.include_router(get_handlers_router())
 
+
 async def setup_bot():
     await bot.set_my_commands(
         [
@@ -26,4 +29,3 @@ async def setup_bot():
         ]
     )
     await bot.delete_webhook(drop_pending_updates=True)
-

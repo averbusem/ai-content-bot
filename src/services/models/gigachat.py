@@ -24,20 +24,15 @@ class GigaChatModel:
         headers = {
             "Authorization": f"Basic {auth_encoded}",
             "RqUID": str(uuid.uuid4()),
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         }
 
-        data = {
-            "scope": settings.GIGACHAT_SCOPE
-        }
+        data = {"scope": settings.GIGACHAT_SCOPE}
 
         try:
             async with httpx.AsyncClient(verify=False) as client:
                 response = await client.post(
-                    self.AUTH_URL,
-                    headers=headers,
-                    data=data,
-                    timeout=30.0
+                    self.AUTH_URL, headers=headers, data=data, timeout=30.0
                 )
                 response.raise_for_status()
                 token_data = response.json()
@@ -46,46 +41,41 @@ class GigaChatModel:
             error_detail = ""
             try:
                 error_detail = e.response.json()
-            except:
+            except ValueError:
                 error_detail = e.response.text
-            raise Exception(f"Ошибка авторизации GigaChat: HTTP {e.response.status_code}: {error_detail}")
+            raise Exception(
+                f"Ошибка авторизации GigaChat: HTTP {e.response.status_code}: {error_detail}"
+            )
         except Exception as e:
             raise Exception(f"Ошибка получения токена GigaChat: {str(e)}")
 
     async def _ensure_token(self):
         """Проверка и обновление токена при необходимости"""
         import time
+
         if not self.access_token or time.time() >= (self.token_expires_at - 60):
             self.access_token = await self._get_auth_token()
             self.token_expires_at = time.time() + (30 * 60)
 
     async def analyze_image(
-            self,
-            image_data: bytes,
-            prompt: str = "Подробно опиши это изображение"
+        self, image_data: bytes, prompt: str = "Подробно опиши это изображение"
     ) -> str:
         await self._ensure_token()
 
-        headers = {
-            "Authorization": f"Bearer {self.access_token}"
-        }
+        headers = {"Authorization": f"Bearer {self.access_token}"}
 
         async with httpx.AsyncClient(verify=False) as client:
             try:
-                files = {
-                    'file': ('image.jpg', image_data, 'image/jpeg')
-                }
+                files = {"file": ("image.jpg", image_data, "image/jpeg")}
 
-                data = {
-                    'purpose': 'general'
-                }
+                data = {"purpose": "general"}
 
                 upload_response = await client.post(
                     f"{self.BASE_URL}/files",
                     headers=headers,
                     files=files,
                     data=data,
-                    timeout=60.0
+                    timeout=60.0,
                 )
 
                 if upload_response.status_code == 401:
@@ -98,7 +88,7 @@ class GigaChatModel:
                         headers=headers,
                         files=files,
                         data=data,
-                        timeout=60.0
+                        timeout=60.0,
                     )
 
                 upload_response.raise_for_status()
@@ -113,21 +103,17 @@ class GigaChatModel:
                 payload = {
                     "model": "GigaChat-Pro",
                     "messages": [
-                        {
-                            "role": "user",
-                            "content": prompt,
-                            "attachments": [file_id]
-                        }
+                        {"role": "user", "content": prompt, "attachments": [file_id]}
                     ],
                     "temperature": 0.7,
-                    "max_tokens": 2000
+                    "max_tokens": 2000,
                 }
 
                 response = await client.post(
                     f"{self.BASE_URL}/chat/completions",
                     headers=headers,
                     json=payload,
-                    timeout=60.0
+                    timeout=60.0,
                 )
 
                 if response.status_code == 401:
@@ -139,7 +125,7 @@ class GigaChatModel:
                         f"{self.BASE_URL}/chat/completions",
                         headers=headers,
                         json=payload,
-                        timeout=60.0
+                        timeout=60.0,
                     )
 
                 response.raise_for_status()
@@ -151,17 +137,19 @@ class GigaChatModel:
                 error_detail = ""
                 try:
                     error_detail = e.response.json()
-                except:
+                except ValueError:
                     error_detail = e.response.text
-                raise Exception(f"Ошибка анализа изображения: HTTP {e.response.status_code}: {error_detail}")
+                raise Exception(
+                    f"Ошибка анализа изображения: HTTP {e.response.status_code}: {error_detail}"
+                )
 
     async def generate_text(
-            self,
-            prompt: str,
-            system_prompt: Optional[str] = None,
-            use_history: bool = False,
-            temperature: Optional[float] = None,
-            max_tokens: Optional[int] = None
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        use_history: bool = False,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """
         Генерация текста
@@ -181,22 +169,16 @@ class GigaChatModel:
         messages = []
 
         if system_prompt:
-            messages.append({
-                "role": "system",
-                "content": system_prompt
-            })
+            messages.append({"role": "system", "content": system_prompt})
 
         if use_history and self.conversation_history:
             messages.extend(self.conversation_history)
 
-        messages.append({
-            "role": "user",
-            "content": prompt
-        })
+        messages.append({"role": "user", "content": prompt})
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         payload = {
@@ -204,7 +186,7 @@ class GigaChatModel:
             "messages": messages,
             "temperature": temperature or settings.AI_TEMPERATURE,
             "max_tokens": max_tokens or settings.AI_MAX_TOKENS,
-            "repetition_penalty": 1.1
+            "repetition_penalty": 1.1,
         }
 
         async with httpx.AsyncClient(verify=False) as client:
@@ -213,7 +195,7 @@ class GigaChatModel:
                     f"{self.BASE_URL}/chat/completions",
                     headers=headers,
                     json=payload,
-                    timeout=60.0
+                    timeout=60.0,
                 )
 
                 if response.status_code == 401:
@@ -225,7 +207,7 @@ class GigaChatModel:
                         f"{self.BASE_URL}/chat/completions",
                         headers=headers,
                         json=payload,
-                        timeout=60.0
+                        timeout=60.0,
                     )
 
                 response.raise_for_status()
@@ -234,14 +216,12 @@ class GigaChatModel:
                 generated_text = result["choices"][0]["message"]["content"]
 
                 if use_history:
-                    self.conversation_history.append({
-                        "role": "user",
-                        "content": prompt
-                    })
-                    self.conversation_history.append({
-                        "role": "assistant",
-                        "content": generated_text
-                    })
+                    self.conversation_history.append(
+                        {"role": "user", "content": prompt}
+                    )
+                    self.conversation_history.append(
+                        {"role": "assistant", "content": generated_text}
+                    )
 
                     if len(self.conversation_history) > 20:
                         self.conversation_history = self.conversation_history[-20:]
@@ -252,16 +232,16 @@ class GigaChatModel:
                 error_detail = ""
                 try:
                     error_detail = e.response.json()
-                except:
+                except ValueError:
                     error_detail = e.response.text
                 raise Exception(f"HTTP {e.response.status_code}: {error_detail}")
 
     async def generate_image(
-            self,
-            prompt: str,
-            system_prompt: Optional[str] = None,
-            width: int = 1024,
-            height: int = 1024
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        width: int = 1024,
+        height: int = 1024,
     ) -> bytes:
         """
         Генерация изображения (БЕЗ исходного изображения)
@@ -279,28 +259,22 @@ class GigaChatModel:
 
         headers = {
             "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         messages = []
 
         if system_prompt:
-            messages.append({
-                "role": "system",
-                "content": system_prompt
-            })
+            messages.append({"role": "system", "content": system_prompt})
 
-        messages.append({
-            "role": "user",
-            "content": f"Создай изображение: {prompt}"
-        })
+        messages.append({"role": "user", "content": f"Создай изображение: {prompt}"})
 
         payload = {
             "model": "GigaChat",
             "messages": messages,
             "function_call": "auto",
             "width": width,
-            "height": height
+            "height": height,
         }
 
         async with httpx.AsyncClient(verify=False) as client:
@@ -309,7 +283,7 @@ class GigaChatModel:
                     f"{self.BASE_URL}/chat/completions",
                     headers=headers,
                     json=payload,
-                    timeout=120.0
+                    timeout=120.0,
                 )
 
                 if response.status_code == 401:
@@ -321,7 +295,7 @@ class GigaChatModel:
                         f"{self.BASE_URL}/chat/completions",
                         headers=headers,
                         json=payload,
-                        timeout=120.0
+                        timeout=120.0,
                     )
 
                 response.raise_for_status()
@@ -330,6 +304,7 @@ class GigaChatModel:
                 content = result["choices"][0]["message"]["content"]
 
                 import re
+
                 file_id_match = re.search(r'<img.*?src="([^"]+)"', content)
                 if not file_id_match:
                     raise ValueError("Не удалось получить file_id изображения")
@@ -339,7 +314,7 @@ class GigaChatModel:
                 image_response = await client.get(
                     f"{self.BASE_URL}/files/{file_id}/content",
                     headers=headers,
-                    timeout=60.0
+                    timeout=60.0,
                 )
                 image_response.raise_for_status()
 
@@ -349,7 +324,7 @@ class GigaChatModel:
                 error_detail = ""
                 try:
                     error_detail = e.response.json()
-                except:
+                except ValueError:
                     error_detail = e.response.text
                 raise Exception(f"HTTP {e.response.status_code}: {error_detail}")
 

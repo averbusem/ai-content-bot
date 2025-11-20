@@ -48,14 +48,14 @@ class TextEditorStates(StatesGroup):
 
 
 class ImageGenerationStates(StatesGroup):
-    mode_selection = State()           # Выбор режима
-    description = State()              # Описание
-    style = State()                    # Стиль
-    colors = State()                   # Цвета
-    upload_for_edit = State()          # Загрузка для редактирования
-    edit_prompt = State()              # Промпт редактирования
-    upload_example = State()           # Загрузка примера
-    example_prompt = State()           # Промпт по примеру
+    mode_selection = State()  # Выбор режима
+    description = State()  # Описание
+    style = State()  # Стиль
+    colors = State()  # Цвета
+    upload_for_edit = State()  # Загрузка для редактирования
+    edit_prompt = State()  # Промпт редактирования
+    upload_example = State()  # Загрузка примера
+    example_prompt = State()  # Промпт по примеру
     waiting_results = State()
 
 

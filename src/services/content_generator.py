@@ -45,10 +45,10 @@ class ContentGenerator:
         return ""
 
     async def generate_free_text_post(
-            self,
-            user_idea: str,
-            style: str = "тёплый и человечный",
-            additional_info: Optional[str] = None
+        self,
+        user_idea: str,
+        style: str = "тёплый и человечный",
+        additional_info: Optional[str] = None,
     ) -> str:
         ngo_context = self._build_ngo_context()
 
@@ -116,19 +116,17 @@ class ContentGenerator:
 
         НЕ ДОДУМЫВАЙ конкретику. Твоя задача - взять ЭТИ факты и подать их интересно."""
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
     async def generate_structured_post(
-            self,
-            event_type: str,
-            date: str,
-            location: str,
-            participants: str,
-            details: str,
-            style: str = "разговорный"
+        self,
+        event_type: str,
+        date: str,
+        location: str,
+        participants: str,
+        details: str,
+        style: str = "разговорный",
     ) -> str:
         """
         Генерация структурированного поста по шаблону
@@ -167,65 +165,21 @@ class ContentGenerator:
         Создай привлекательный пост-анонс."""
 
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7
-        )
-
-    async def generate_content_plan(
-            self,
-            duration_days: int,
-            posts_per_week: int,
-            preferences: Optional[str] = None
-    ) -> str:
-
-        ngo_context = self._build_ngo_context()
-
-        system_prompt = f"""Ты - SMM-стратег для некоммерческих организаций.
-    Создавай практичные контент-планы с разнообразными типами постов.
-
-    {ngo_context if ngo_context else "Организация: информация не предоставлена"}"""
-
-        prompt = f"""Создай контент-план для Telegram-канала НКО.
-
-    Параметры:
-    - Период: {duration_days} дней
-    - Частота: {posts_per_week} постов в неделю
-    {f"- Предпочтения: {preferences}" if preferences else ""}
-
-    Типы постов для использования:
-    - Анонсы событий
-    - Новости организации
-    - Призывы к действию
-    - Отчёты о проделанной работе
-    - Образовательный контент
-    - Истории благополучателей
-    - Благодарности волонтёрам и донорам
-
-    Формат ответа:
-    День [число.месяц] - 📝 Тип поста: [название] - 💡 Идея: [краткое описание]
-
-    Создай сбалансированный план с разнообразием тем."""
-
-        return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7,
-            max_tokens=3000
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
     async def generate_structured_form_post(
-            self,
-            event: str,
-            description: str,
-            goal: str,
-            date: Optional[str] = None,
-            location: Optional[str] = None,
-            platform: str = "universal",
-            audience: str = "broad",
-            style: str = "warm",
-            length: str = "medium",
-            additional_info: Optional[str] = None
+        self,
+        event: str,
+        description: str,
+        goal: str,
+        date: Optional[str] = None,
+        location: Optional[str] = None,
+        platform: str = "universal",
+        audience: str = "broad",
+        style: str = "warm",
+        length: str = "medium",
+        additional_info: Optional[str] = None,
     ) -> str:
         """
         Генерация поста на основе структурированной формы (10 вопросов)
@@ -253,7 +207,7 @@ class ContentGenerator:
             "facts": "с фактами и цифрами",
             "simple": "простой и понятный",
             "formal": "официальный",
-            "emotional": "эмоциональный и вдохновляющий"
+            "emotional": "эмоциональный и вдохновляющий",
         }
         style_text = style_map.get(style, "тёплый и человечный")
 
@@ -261,7 +215,7 @@ class ContentGenerator:
         length_map = {
             "short": "короткий (100-150 слов)",
             "medium": "средний (200-300 слов)",
-            "long": "подробный (350-500 слов)"
+            "long": "подробный (350-500 слов)",
         }
         length_text = length_map.get(length, "средний (200-300 слов)")
 
@@ -269,7 +223,7 @@ class ContentGenerator:
         platform_map = {
             "telegram": "Telegram",
             "vk": "ВКонтакте",
-            "universal": "универсально (для всех платформ)"
+            "universal": "универсально (для всех платформ)",
         }
         platform_text = platform_map.get(platform, "универсально")
 
@@ -280,7 +234,7 @@ class ContentGenerator:
             "donors": "доноры",
             "volunteers": "волонтёры",
             "media": "СМИ",
-            "broad": "широкая аудитория"
+            "broad": "широкая аудитория",
         }
         audience_text = audience_map.get(audience, "широкая аудитория")
 
@@ -292,9 +246,9 @@ class ContentGenerator:
             "donations": "собрать пожертвования",
             "work": "рассказать о работе организации",
             "thanks": "выразить благодарность",
-            "announcement": "анонсировать событие"
+            "announcement": "анонсировать событие",
         }
-        
+
         # Если цель начинается с "other:", берем текст после двоеточия
         if goal.startswith("other:"):
             goal_text = goal.split(":", 1)[1] if ":" in goal else goal
@@ -354,7 +308,7 @@ class ContentGenerator:
         prompt_parts = [
             f"СОБЫТИЕ: {event}",
             f"ОПИСАНИЕ: {description}",
-            f"ГЛАВНАЯ ЦЕЛЬ ПОСТА: {goal_text}"
+            f"ГЛАВНАЯ ЦЕЛЬ ПОСТА: {goal_text}",
         ]
 
         if date:
@@ -381,16 +335,11 @@ class ContentGenerator:
 НЕ ДОДУМЫВАЙ конкретику. Твоя задача - взять ЭТИ факты и подать их интересно."""
 
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
     async def generate_post_from_example(
-            self,
-            example_post: str,
-            new_topic: str,
-            style: Optional[str] = None
+        self, example_post: str, new_topic: str, style: Optional[str] = None
     ) -> str:
         """
         Генерация поста на основе примера
@@ -422,16 +371,10 @@ class ContentGenerator:
         Новый пост должен иметь такую же структуру и энергетику, но с новым содержанием."""
 
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.75
+            prompt=prompt, system_prompt=system_prompt, temperature=0.75
         )
 
-    async def edit_post(
-            self,
-            original_post: str,
-            edit_request: str
-    ) -> str:
+    async def edit_post(self, original_post: str, edit_request: str) -> str:
         """
         Редактирование поста на основе запроса пользователя
 
@@ -537,15 +480,11 @@ class ContentGenerator:
         Верни ТОЛЬКО отредактированный пост без комментариев."""
 
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.6
+            prompt=prompt, system_prompt=system_prompt, temperature=0.6
         )
 
     async def edit_text(
-            self,
-            text: str,
-            edit_focus: str = "все аспекты"
+        self, text: str, edit_focus: str = "все аспекты"
     ) -> Dict[str, Any]:
         """
         Редактирование текста с указанием ошибок
@@ -582,20 +521,14 @@ class ContentGenerator:
         ..."""
 
         response = await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.3
+            prompt=prompt, system_prompt=system_prompt, temperature=0.3
         )
 
         # Парсим ответ
-        sections = {
-            "edited_text": "",
-            "errors": [],
-            "recommendations": []
-        }
+        sections = {"edited_text": "", "errors": [], "recommendations": []}
 
         current_section = None
-        for line in response.split('\n'):
+        for line in response.split("\n"):
             line = line.strip()
 
             if "ИСПРАВЛЕННЫЙ ТЕКСТ:" in line:
@@ -621,10 +554,7 @@ class ContentGenerator:
         return sections
 
     async def generate_content_plan(
-            self,
-            duration_days: int,
-            posts_per_week: int,
-            preferences: Optional[str] = None
+        self, duration_days: int, posts_per_week: int, preferences: Optional[str] = None
     ) -> str:
         """
         Создание контент-плана
@@ -658,7 +588,9 @@ class ContentGenerator:
         posts_full_weeks = full_weeks * posts_per_week
 
         # Посты за оставшиеся дни (пропорционально)
-        posts_extra_days = round(extra_days * posts_per_week / 7) if extra_days > 0 else 0
+        posts_extra_days = (
+            round(extra_days * posts_per_week / 7) if extra_days > 0 else 0
+        )
 
         # Общее количество постов
         total_posts = posts_full_weeks + posts_extra_days
@@ -677,15 +609,24 @@ class ContentGenerator:
             for i in range(total_posts):
                 post_day = start_date + timedelta(days=int(i * interval))
                 day_name = post_day.strftime("%a").upper()
-                day_names = {"MON": "ПН", "TUE": "ВТ", "WED": "СР", "THU": "ЧТ",
-                             "FRI": "ПТ", "SAT": "СБ", "SUN": "ВС"}
+                day_names = {
+                    "MON": "ПН",
+                    "TUE": "ВТ",
+                    "WED": "СР",
+                    "THU": "ЧТ",
+                    "FRI": "ПТ",
+                    "SAT": "СБ",
+                    "SUN": "ВС",
+                }
 
-                post_dates.append({
-                    "day_name": day_names.get(day_name, day_name),
-                    "date": post_day.strftime("%d.%m"),
-                    "time": posting_times[i % len(posting_times)],
-                    "week": (post_day - start_date).days // 7 + 1
-                })
+                post_dates.append(
+                    {
+                        "day_name": day_names.get(day_name, day_name),
+                        "date": post_day.strftime("%d.%m"),
+                        "time": posting_times[i % len(posting_times)],
+                        "week": (post_day - start_date).days // 7 + 1,
+                    }
+                )
 
         # Формируем структуру с готовыми датами
         posts_structure = ""
@@ -694,13 +635,17 @@ class ContentGenerator:
         for idx, post_date in enumerate(post_dates, 1):
             if post_date["week"] != current_week:
                 current_week = post_date["week"]
-                week_posts_count = sum(1 for p in post_dates if p["week"] == current_week)
+                week_posts_count = sum(
+                    1 for p in post_dates if p["week"] == current_week
+                )
                 posts_structure += f"\n<b>📅 Неделя {current_week}</b> ({week_posts_count} {'пост' if week_posts_count == 1 else 'постов'})\n\n"
 
             posts_structure += f"<b>{post_date['day_name']} {post_date['date']}, {post_date['time']}</b>\n"
-            posts_structure += f"[ЗАПОЛНИ: Тип поста (📝/❤️/📊/🤝/🙏/📅)]\n"
-            posts_structure += f"Тема: [ЗАПОЛНИ тему, связанную с деятельностью организации]\n"
-            posts_structure += f"Формат: Текст + фото\n\n"
+            posts_structure += "[ЗАПОЛНИ: Тип поста (📝/❤️/📊/🤝/🙏/📅)]\n"
+            posts_structure += (
+                "Тема: [ЗАПОЛНИ тему, связанную с деятельностью организации]\n"
+            )
+            posts_structure += "Формат: Текст + фото\n\n"
 
             if idx < len(post_dates):
                 posts_structure += "---\n\n"
@@ -714,7 +659,7 @@ class ContentGenerator:
         {f"- Пожелания: {preferences}" if preferences else ""}
 
         ⚠️ КРИТИЧЕСКИ ВАЖНО:
-        КОЛИЧЕСТВО ПОСТОВ СТРОГО ФИКСИРОВАНО: {total_posts} {'пост' if total_posts == 1 else 'постов'}
+        КОЛИЧЕСТВО ПОСТОВ СТРОГО ФИКСИРОВАНО: {total_posts} {"пост" if total_posts == 1 else "постов"}
         НЕ ДОБАВЛЯЙ больше постов! НЕ УДАЛЯЙ посты!
         Даты и время УЖЕ РАССЧИТАНЫ - только заполни темы!
 
@@ -740,8 +685,5 @@ class ContentGenerator:
         Верни готовый план с заполненными темами."""
 
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.6,
-            max_tokens=3000
+            prompt=prompt, system_prompt=system_prompt, temperature=0.6, max_tokens=3000
         )
