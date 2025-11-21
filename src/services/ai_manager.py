@@ -1,8 +1,9 @@
-from typing import Optional, Dict, Any
+from typing import Optional
 from .models.gigachat import GigaChatModel
 from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
 from .image_generator import ImageGenerator
+from .text_overlay import TextOverlayConfig, TextOverlayService
 from .nko_service import nko_service
 
 
@@ -11,7 +12,8 @@ class AIManager:
         self.gigachat = GigaChatModel()
         self.salute_speech = SaluteSpeechModel()
         self.content_generator = ContentGenerator(self.gigachat)
-        self.image_generator = ImageGenerator(self.gigachat)
+        text_overlay_service = TextOverlayService()
+        self.image_generator = ImageGenerator(self.gigachat, text_overlay_service=text_overlay_service)
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
 
@@ -33,32 +35,6 @@ class AIManager:
             user_idea=user_idea,
             style=style,
             additional_info=additional_info
-        )
-
-    async def generate_structured_post(
-        self,
-        user_id: int,
-        event_type: str,
-        date: str,
-        location: str,
-        participants: str,
-        details: str,
-        style: str = "разговорный"
-    ) -> str:
-        """Генерация структурированного поста"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
-
-        return await self.content_generator.generate_structured_post(
-            event_type=event_type,
-            date=date,
-            location=location,
-            participants=participants,
-            details=details,
-            style=style
         )
 
     async def generate_structured_form_post(
@@ -132,17 +108,6 @@ class AIManager:
             edit_request=edit_request
         )
 
-    async def edit_text(
-        self,
-        text: str,
-        edit_focus: str = "все аспекты"
-    ) -> Dict[str, Any]:
-        """Редактирование текста"""
-        return await self.content_generator.edit_text(
-            text=text,
-            edit_focus=edit_focus
-        )
-
     async def generate_content_plan(
         self,
         user_id: int,
@@ -169,7 +134,10 @@ class AIManager:
         self,
         prompt: str,
         width: int = 1024,
-        height: int = 1024
+        height: int = 1024,
+        overlay_text: Optional[str] = None,
+        overlay_font: Optional[str] = None,
+        overlay_config: Optional[TextOverlayConfig] = None
     ) -> bytes:
         """
         Генерация изображения
@@ -185,24 +153,10 @@ class AIManager:
         return await self.image_generator.generate_image(
             prompt=prompt,
             width=width,
-            height=height
-        )
-
-    async def generate_image_from_params(
-        self,
-        description: str,
-        style: str,
-        colors: str,
-        width: int = 1024,
-        height: int = 1024
-    ) -> bytes:
-        """Генерация изображения на основе параметров пользователя"""
-        return await self.image_generator.generate_image_from_params(
-            description=description,
-            style=style,
-            colors=colors,
-            width=width,
-            height=height
+            height=height,
+            overlay_text=overlay_text,
+            overlay_font=overlay_font,
+            overlay_config=overlay_config
         )
 
     async def generate_image_from_post(
@@ -210,14 +164,22 @@ class AIManager:
         post_text: str,
         image_description: Optional[str] = None,
         width: int = 1024,
-        height: int = 1024
+        height: int = 1024,
+        include_info_block: bool = False,
+        prepared_info_text: Optional[str] = None,
+        overlay_font: Optional[str] = None,
+        overlay_config: Optional[TextOverlayConfig] = None
     ) -> bytes:
         """Генерация изображения на основе текста поста"""
         return await self.image_generator.generate_image_from_post(
             post_text=post_text,
             image_description=image_description,
             width=width,
-            height=height
+            height=height,
+            include_info_block=include_info_block,
+            prepared_info_text=prepared_info_text,
+            overlay_font=overlay_font,
+            overlay_config=overlay_config
         )
 
     async def edit_image(
@@ -283,13 +245,6 @@ class AIManager:
             audio_data=audio_data,
             audio_format=audio_format
         )
-
-    async def transcribe_voice_file(
-        self,
-        file_path: str
-    ) -> str:
-        return await self.salute_speech.transcribe_from_file(file_path)
-
 
     def clear_conversation_history(self):
         self.gigachat.clear_history()

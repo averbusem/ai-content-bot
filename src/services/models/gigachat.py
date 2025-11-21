@@ -62,7 +62,7 @@ class GigaChatModel:
     async def analyze_image(
             self,
             image_data: bytes,
-            prompt: str = "Подробно опиши это изображение"
+            prompt: str = f"Максимально подробно опиши это изображение, чтобы не упустить все детали на нём"
     ) -> str:
         await self._ensure_token()
 
