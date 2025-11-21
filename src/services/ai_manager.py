@@ -271,3 +271,6 @@ class AIManager:
 
     def get_conversation_history(self):
         return self.gigachat.get_history()
+
+
+ai_manager = AIManager()

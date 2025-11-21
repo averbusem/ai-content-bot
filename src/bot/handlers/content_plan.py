@@ -2,11 +2,10 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from src.bot.keyboards import back_to_menu_keyboard, main_menu_keyboard
-from src.services.ai_manager import AIManager
+from src.services.ai_manager import ai_manager
 from src.bot.states import ContentPlanStates
 
 router = Router()
-ai_manager = AIManager()
 
 
 @router.message(ContentPlanStates.duration_input, F.text)

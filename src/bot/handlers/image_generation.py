@@ -13,10 +13,9 @@ from src.bot.keyboards import (
     image_mode_keyboard,
 )
 from src.bot.states import ImageGenerationStates, MainMenuStates
-from src.services.ai_manager import AIManager
+from src.services.ai_manager import ai_manager
 
 router = Router()
-ai_manager = AIManager()
 logger = logging.getLogger(__name__)
 
 

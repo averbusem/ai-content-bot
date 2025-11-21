@@ -8,10 +8,9 @@ from src.bot.keyboards import (
     text_redactor_results_keyboard,
 )
 from src.bot.states import TextEditorStates, MainMenuStates
-from src.services.ai_manager import AIManager
+from src.services.ai_manager import ai_manager
 
 router = Router()
-ai_manager = AIManager()
 
 
 @router.message(TextEditorStates.post_input, F.text)

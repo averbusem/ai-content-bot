@@ -8,10 +8,9 @@ from src.bot.keyboards import (
     main_menu_keyboard,
 )
 from src.bot.states import TextGenerationStates, MainMenuStates
-from src.services.ai_manager import AIManager
+from src.services.ai_manager import ai_manager
 
 router = Router()
-ai_manager = AIManager()
 
 
 @router.callback_query(F.data == "text_gen:free_text")

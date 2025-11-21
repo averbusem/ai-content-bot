@@ -15,10 +15,9 @@ from src.bot.keyboards import (
     struct_form_skip_keyboard,
 )
 from src.bot.states import TextGenerationStructStates, MainMenuStates
-from src.services.ai_manager import AIManager
+from src.services.ai_manager import ai_manager
 
 router = Router()
-ai_manager = AIManager()
 
 
 @router.callback_query(F.data == "text_gen:struct")
