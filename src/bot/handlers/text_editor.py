@@ -16,12 +16,6 @@ router = Router()
 @router.message(TextEditorStates.post_input, F.text)
 async def post_input_handler(message: types.Message, state: FSMContext):
     user_text = message.text.strip()
-
-    if not user_text:
-        return await message.answer(
-            "Пожалуйста, отправьте текст.", reply_markup=back_to_menu_keyboard()
-        )
-
     await state.set_state(TextEditorStates.edit_input)
     await state.update_data(user_text=user_text)
 
@@ -33,12 +27,6 @@ async def post_input_handler(message: types.Message, state: FSMContext):
 @router.message(TextEditorStates.edit_input, F.text)
 async def edit_input_handler(message: types.Message, state: FSMContext):
     edit_text = message.text.strip()
-
-    if not edit_text:
-        return await message.answer(
-            "Пожалуйста, отправьте текст.", reply_markup=back_to_menu_keyboard()
-        )
-
     user_id = message.from_user.id
 
     await state.set_state(TextEditorStates.waiting_results)
@@ -70,6 +58,7 @@ async def edit_input_handler(message: types.Message, state: FSMContext):
     )
 
 
+# Если пользователь отправил НЕ текст
 @router.message(TextEditorStates.post_input)
 async def free_text_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(
@@ -101,13 +90,6 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 @router.message(TextEditorStates.editing, F.text)
 async def editing_handler(message: types.Message, state: FSMContext):
     edit_request = message.text.strip()
-
-    if not edit_request:
-        return await message.answer(
-            "Пожалуйста, опишите, что нужно изменить.",
-            reply_markup=back_to_menu_keyboard(),
-        )
-
     data = await state.get_data()
     original_post = data.get("user_text", "")
 
@@ -145,6 +127,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
     )
 
 
+# Если пользователь отправил НЕ текст
 @router.message(TextEditorStates.editing)
 async def editing_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(

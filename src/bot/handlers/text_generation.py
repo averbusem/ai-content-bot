@@ -196,13 +196,6 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 @router.message(TextGenerationStates.editing, F.text)
 async def editing_handler(message: types.Message, state: FSMContext):
     edit_request = message.text.strip()
-
-    if not edit_request:
-        return await message.answer(
-            "Пожалуйста, опишите, что нужно изменить.",
-            reply_markup=back_to_menu_keyboard(),
-        )
-
     data = await state.get_data()
     original_post = data.get("post", "")
 
