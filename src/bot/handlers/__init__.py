@@ -5,7 +5,9 @@ from src.bot.handlers.menu import router as router_menu
 from src.bot.handlers.nko_data import router as router_nko_data
 from src.bot.handlers.help import router as router_help
 from src.bot.handlers.text_generation import router as router_text_generation
-from src.bot.handlers.text_generation_struct import router as router_text_generation_struct
+from src.bot.handlers.text_generation_struct import (
+    router as router_text_generation_struct,
+)
 from src.bot.handlers.image_generation import router as router_image_generation
 from src.bot.handlers.text_editor import router as router_text_editor
 from src.bot.handlers.content_plan import router as router_content_plan

@@ -22,9 +22,15 @@ class RemoveLastKeyboardMiddleware(BaseMiddleware):
         elif isinstance(event, types.CallbackQuery):
             current_message_id = event.message.message_id
 
-        if last_message_id and current_message_id and last_message_id != current_message_id:
+        if (
+            last_message_id
+            and current_message_id
+            and last_message_id != current_message_id
+        ):
             chat_id = (
-                event.message.chat.id if isinstance(event, types.CallbackQuery) else event.chat.id
+                event.message.chat.id
+                if isinstance(event, types.CallbackQuery)
+                else event.chat.id
             )
             await _remove_keyboard(event.bot, chat_id, last_message_id)
 

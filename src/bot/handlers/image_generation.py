@@ -1,9 +1,7 @@
 import logging
-
-logger = logging.getLogger(__name__)
-
 from aiogram import types, Router, F
 from aiogram.filters import StateFilter
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
@@ -20,10 +18,11 @@ from src.bot.keyboards import (
     overlay_font_keyboard
 )
 from src.bot.states import ImageGenerationStates, MainMenuStates
-from src.services.ai_manager import AIManager
 from src.services.text_overlay import TextOverlayConfig
+from src.services.ai_manager import ai_manager
+
 router = Router()
-ai_manager = AIManager()
+logger = logging.getLogger(__name__)
 
 
 def _get_font_options(limit: int = 3) -> list[str]:
@@ -31,7 +30,6 @@ def _get_font_options(limit: int = 3) -> list[str]:
     if not service:
         return ["random"]
 
-    logger.info(service.list_fonts())
     fonts = [font for font in service.list_fonts() if font and font != "default"]
     if not fonts:
         fonts = []
@@ -168,9 +166,8 @@ async def image_generation_handler(callback: types.CallbackQuery, state: FSMCont
     await state.set_state(ImageGenerationStates.mode_selection)
     await callback.answer()
     return await callback.message.edit_text(
-        "🎨 <b>Генерация картинки</b>\n\n"
-        "Выберите режим работы:",
-        reply_markup=image_mode_keyboard()
+        "🎨 <b>Генерация картинки</b>\n\nВыберите режим работы:",
+        reply_markup=image_mode_keyboard(),
     )
 
 
@@ -184,11 +181,11 @@ async def image_mode_create_handler(callback: types.CallbackQuery, state: FSMCon
         "<b>Вопрос 1/3:</b> Опишите, какую картинку нужно создать.\n\n"
         "<i>💡 Чем подробнее описание, тем лучше результат!</i>\n\n"
         "<i>Примеры хороших описаний:</i>\n"
-        "• \"Волонтёры убирают мусор на берегу озера, собирают его в мешки. "
-        "На заднем плане озеро и деревья, солнечная погода.\"\n"
-        "• \"Дети читают книги в библиотеке, уютная атмосфера, тёплый свет\"\n"
-        "• \"Логотип благотворительного фонда с изображением дома и сердца\"",
-        reply_markup=back_to_menu_keyboard()
+        '• "Волонтёры убирают мусор на берегу озера, собирают его в мешки. '
+        'На заднем плане озеро и деревья, солнечная погода."\n'
+        '• "Дети читают книги в библиотеке, уютная атмосфера, тёплый свет"\n'
+        '• "Логотип благотворительного фонда с изображением дома и сердца"',
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -205,7 +202,7 @@ async def image_mode_edit_handler(callback: types.CallbackQuery, state: FSMConte
         "• Изменить стиль\n"
         "• Добавить или убрать элементы\n"
         "• Улучшить качество",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -218,13 +215,14 @@ async def image_mode_example_handler(callback: types.CallbackQuery, state: FSMCo
         "📋 <b>Создание по примеру</b>\n\n"
         "Загрузите изображение-пример.\n\n"
         "<i>Я создам новое изображение в похожем стиле, с похожей композицией или цветовой гаммой.</i>",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
 # ============================================================================
 # РЕЖИМ: РЕДАКТИРОВАНИЕ ИЗОБРАЖЕНИЯ
 # ============================================================================
+
 
 @router.message(ImageGenerationStates.upload_for_edit, F.photo)
 async def upload_for_edit_photo_handler(message: types.Message, state: FSMContext):
@@ -238,12 +236,12 @@ async def upload_for_edit_photo_handler(message: types.Message, state: FSMContex
         "✅ Изображение загружено!\n\n"
         "Теперь опишите, что нужно изменить.\n\n"
         "<i>Примеры:</i>\n"
-        "• \"Сделай фон более ярким\"\n"
-        "• \"Убери человека слева\"\n"
+        '• "Сделай фон более ярким"\n'
+        '• "Убери человека слева"\n'
         "• \"Добавь текст 'Спасибо волонтёрам'\"\n"
-        "• \"Измени стиль на акварельный\"\n"
-        "• \"Улучши качество и детализацию\"",
-        reply_markup=back_to_menu_keyboard()
+        '• "Измени стиль на акварельный"\n'
+        '• "Улучши качество и детализацию"',
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -254,7 +252,7 @@ async def upload_for_edit_document_handler(message: types.Message, state: FSMCon
     if not document.mime_type or not document.mime_type.startswith("image/"):
         return await message.answer(
             "Пожалуйста, загрузите изображение (фото или файл с изображением).",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     file_id = document.file_id
@@ -263,9 +261,8 @@ async def upload_for_edit_document_handler(message: types.Message, state: FSMCon
     await state.set_state(ImageGenerationStates.edit_prompt)
 
     return await message.answer(
-        "✅ Изображение загружено!\n\n"
-        "Теперь опишите, что нужно изменить.",
-        reply_markup=back_to_menu_keyboard()
+        "✅ Изображение загружено!\n\nТеперь опишите, что нужно изменить.",
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -273,7 +270,7 @@ async def upload_for_edit_document_handler(message: types.Message, state: FSMCon
 async def upload_for_edit_invalid_handler(message: types.Message):
     return await message.answer(
         "Пожалуйста, отправьте изображение (фото или файл).",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -284,7 +281,7 @@ async def edit_prompt_handler(message: types.Message, state: FSMContext):
     if not edit_prompt:
         return await message.answer(
             "Пожалуйста, опишите, что нужно изменить.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     data = await state.get_data()
@@ -293,7 +290,7 @@ async def edit_prompt_handler(message: types.Message, state: FSMContext):
     if not source_file_id:
         return await message.answer(
             "❌ Ошибка: изображение не найдено. Начните заново.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     loading_msg = await message.answer(
@@ -313,46 +310,44 @@ async def edit_prompt_handler(message: types.Message, state: FSMContext):
                 "⏳ Редактирую изображение...\n\n"
                 "<i>Этап 2/2: Генерирую новое изображение...</i>"
             )
-        except:
-            pass
+        except TelegramBadRequest as e:
+            logger.debug(f"Failed to update loading message: {e}")
 
         image_bytes = await ai_manager.edit_image(
             source_image_data=source_image_data,
             edit_request=edit_prompt,
             width=1024,
-            height=1024
+            height=1024,
         )
 
         try:
             await loading_msg.delete()
-        except Exception:
-            pass
+        except TelegramBadRequest as e:
+            logger.debug(f"Failed to delete loading message: {e}")
 
         await state.update_data(
-            last_edit_request=edit_prompt,
-            last_source_file_id=source_file_id
+            last_edit_request=edit_prompt, last_source_file_id=source_file_id
         )
 
         await message.answer_photo(
             photo=BufferedInputFile(image_bytes, filename="edited_image.jpg"),
             caption=f"✅ <b>Готово! Изображение отредактировано.</b>\n\n"
-                    f"<i>Изменения:</i> {edit_prompt}"
+            f"<i>Изменения:</i> {edit_prompt}",
         )
 
         return await message.answer(
-            "Выберите действие:",
-            reply_markup=image_generation_results_keyboard()
+            "Выберите действие:", reply_markup=image_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except Exception:
         try:
             await loading_msg.delete()
-        except Exception:
-            pass
+        except TelegramBadRequest as e:
+            logger.debug(f"Failed to delete loading message: {e}")
         return await message.answer(
-            f"❌ Произошла ошибка при редактировании.\n\n"
-            f"<i>Попробуйте упростить запрос или начать заново.</i>",
-            reply_markup=back_to_menu_keyboard()
+            "❌ Произошла ошибка при редактировании.\n\n"
+            "<i>Попробуйте упростить запрос или начать заново.</i>",
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -360,13 +355,14 @@ async def edit_prompt_handler(message: types.Message, state: FSMContext):
 async def edit_prompt_invalid_handler(message: types.Message):
     return await message.answer(
         "Пожалуйста, отправьте текстовое описание изменений.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
 # ============================================================================
 # РЕЖИМ: СОЗДАНИЕ ПО ПРИМЕРУ
 # ============================================================================
+
 
 @router.message(ImageGenerationStates.upload_example, F.photo)
 async def upload_example_photo_handler(message: types.Message, state: FSMContext):
@@ -380,11 +376,11 @@ async def upload_example_photo_handler(message: types.Message, state: FSMContext
         "✅ Пример загружен!\n\n"
         "Теперь опишите, что создать на основе этого примера.\n\n"
         "<i>Примеры:</i>\n"
-        "• \"Создай похожее изображение, но с детьми вместо взрослых\"\n"
-        "• \"В таком же стиле нарисуй нашего волонтёра\"\n"
-        "• \"Сделай логотип в таком же стиле, но с изображением дома\"\n"
-        "• \"По примеру этой цветовой гаммы создай постер для мероприятия\"",
-        reply_markup=back_to_menu_keyboard()
+        '• "Создай похожее изображение, но с детьми вместо взрослых"\n'
+        '• "В таком же стиле нарисуй нашего волонтёра"\n'
+        '• "Сделай логотип в таком же стиле, но с изображением дома"\n'
+        '• "По примеру этой цветовой гаммы создай постер для мероприятия"',
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -395,7 +391,7 @@ async def upload_example_document_handler(message: types.Message, state: FSMCont
     if not document.mime_type or not document.mime_type.startswith("image/"):
         return await message.answer(
             "Пожалуйста, загрузите изображение (фото или файл с изображением).",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     file_id = document.file_id
@@ -404,9 +400,8 @@ async def upload_example_document_handler(message: types.Message, state: FSMCont
     await state.set_state(ImageGenerationStates.example_prompt)
 
     return await message.answer(
-        "✅ Пример загружен!\n\n"
-        "Теперь опишите, что создать на основе этого примера.",
-        reply_markup=back_to_menu_keyboard()
+        "✅ Пример загружен!\n\nТеперь опишите, что создать на основе этого примера.",
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -414,7 +409,7 @@ async def upload_example_document_handler(message: types.Message, state: FSMCont
 async def upload_example_invalid_handler(message: types.Message):
     return await message.answer(
         "Пожалуйста, отправьте изображение-пример (фото или файл).",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -424,8 +419,7 @@ async def example_prompt_handler(message: types.Message, state: FSMContext):
 
     if not example_prompt:
         return await message.answer(
-            "Пожалуйста, опишите, что создать.",
-            reply_markup=back_to_menu_keyboard()
+            "Пожалуйста, опишите, что создать.", reply_markup=back_to_menu_keyboard()
         )
 
     data = await state.get_data()
@@ -434,7 +428,7 @@ async def example_prompt_handler(message: types.Message, state: FSMContext):
     if not example_file_id:
         return await message.answer(
             "❌ Ошибка: пример не найден. Начните заново.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     loading_msg = await message.answer(
@@ -454,46 +448,44 @@ async def example_prompt_handler(message: types.Message, state: FSMContext):
                 "⏳ Создаю изображение по примеру...\n\n"
                 "<i>Этап 2/2: Генерирую новое изображение...</i>"
             )
-        except:
-            pass
+        except TelegramBadRequest as e:
+            logger.debug(f"Failed to update loading message: {e}")
 
         image_bytes = await ai_manager.create_image_from_example(
             example_image_data=example_image_data,
             creation_request=example_prompt,
             width=1024,
-            height=1024
+            height=1024,
         )
 
         try:
             await loading_msg.delete()
-        except Exception:
-            pass
+        except TelegramBadRequest as e:
+            logger.debug(f"Failed to delete loading message: {e}")
 
         await state.update_data(
-            last_creation_request=example_prompt,
-            last_example_file_id=example_file_id
+            last_creation_request=example_prompt, last_example_file_id=example_file_id
         )
 
         await message.answer_photo(
             photo=BufferedInputFile(image_bytes, filename="example_based_image.jpg"),
             caption=f"✅ <b>Готово! Изображение создано по примеру.</b>\n\n"
-                    f"<i>Описание:</i> {example_prompt}"
+            f"<i>Описание:</i> {example_prompt}",
         )
 
         return await message.answer(
-            "Выберите действие:",
-            reply_markup=image_generation_results_keyboard()
+            "Выберите действие:", reply_markup=image_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except Exception:
         try:
             await loading_msg.delete()
-        except Exception:
-            pass
+        except TelegramBadRequest as e:
+            logger.debug(f"Failed to delete loading message: {e}")
         return await message.answer(
-            f"❌ Произошла ошибка.\n\n"
-            f"<i>Попробуйте упростить запрос или начать заново.</i>",
-            reply_markup=back_to_menu_keyboard()
+            "❌ Произошла ошибка.\n\n"
+            "<i>Попробуйте упростить запрос или начать заново.</i>",
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -501,13 +493,14 @@ async def example_prompt_handler(message: types.Message, state: FSMContext):
 async def example_prompt_invalid_handler(message: types.Message):
     return await message.answer(
         "Пожалуйста, отправьте текстовое описание.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
 # ============================================================================
 # РЕЖИМ: СОЗДАНИЕ НОВОГО ИЗОБРАЖЕНИЯ
 # ============================================================================
+
 
 @router.message(ImageGenerationStates.description, F.text)
 async def image_description_text_handler(message: types.Message, state: FSMContext):
@@ -516,7 +509,7 @@ async def image_description_text_handler(message: types.Message, state: FSMConte
     if not description:
         return await message.answer(
             "Пожалуйста, отправьте описание картинки.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     await state.update_data(description=description)
@@ -524,7 +517,7 @@ async def image_description_text_handler(message: types.Message, state: FSMConte
 
     return await message.answer(
         "<b>Вопрос 2/3:</b> Какой стиль изображения?",
-        reply_markup=image_style_keyboard()
+        reply_markup=image_style_keyboard(),
     )
 
 
@@ -532,7 +525,7 @@ async def image_description_text_handler(message: types.Message, state: FSMConte
 async def image_description_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(
         "Пожалуйста, отправьте текстовое описание.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -545,7 +538,7 @@ async def image_style_handler(callback: types.CallbackQuery, state: FSMContext):
         "illustration": "🎨 Иллюстрация/рисунок",
         "minimalism": "📱 Минимализм",
         "poster": "🎭 Постер/афиша",
-        "business": "💼 Деловой стиль"
+        "business": "💼 Деловой стиль",
     }
 
     await state.update_data(style=style, style_name=style_names.get(style, style))
@@ -553,8 +546,7 @@ async def image_style_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
     return await callback.message.edit_text(
-        "<b>Вопрос 3/3:</b> Основные цвета:",
-        reply_markup=image_colors_keyboard()
+        "<b>Вопрос 3/3:</b> Основные цвета:", reply_markup=image_colors_keyboard()
     )
 
 
@@ -568,7 +560,7 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
         "cold": "🔵 Холодные (синий, голубой, зелёный)",
         "bright": "🌈 Яркие и контрастные",
         "neutral": "⚪ Нейтральные и пастельные",
-        "auto": "💡 На ваш выбор (система сама подберёт)"
+        "auto": "💡 На ваш выбор (система сама подберёт)",
     }
 
     await state.update_data(colors=colors, colors_name=color_names.get(colors, colors))
@@ -678,19 +670,21 @@ async def image_overlay_font_handler(callback: types.CallbackQuery, state: FSMCo
 # ОБРАБОТКА РЕЗУЛЬТАТОВ
 # ============================================================================
 
+
 @router.callback_query(F.data == "image_result:ok")
 async def image_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
     """Handler для кнопки 'Всё отлично' после создания изображения"""
     await state.set_state(MainMenuStates.main_menu)
     await callback.answer("Рад был помочь! 🎉")
     return await callback.message.answer(
-        "👋 Главное меню",
-        reply_markup=main_menu_keyboard()
+        "👋 Главное меню", reply_markup=main_menu_keyboard()
     )
 
 
 @router.callback_query(F.data == "image_result:regenerate")
-async def image_result_regenerate_handler(callback: types.CallbackQuery, state: FSMContext):
+async def image_result_regenerate_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
     data = await state.get_data()
     mode = data.get("mode")
 
@@ -706,7 +700,7 @@ async def image_result_regenerate_handler(callback: types.CallbackQuery, state: 
                 await loading_msg.delete()
                 return await callback.message.answer(
                     "❌ Не найдены данные для повтора",
-                    reply_markup=image_generation_results_keyboard()
+                    reply_markup=image_generation_results_keyboard(),
                 )
 
             file = await callback.bot.get_file(source_file_id)
@@ -717,7 +711,7 @@ async def image_result_regenerate_handler(callback: types.CallbackQuery, state: 
                 source_image_data=source_image_data,
                 edit_request=edit_request,
                 width=1024,
-                height=1024
+                height=1024,
             )
 
         elif mode == "example":
@@ -728,7 +722,7 @@ async def image_result_regenerate_handler(callback: types.CallbackQuery, state: 
                 await loading_msg.delete()
                 return await callback.message.answer(
                     "❌ Не найдены данные для повтора",
-                    reply_markup=image_generation_results_keyboard()
+                    reply_markup=image_generation_results_keyboard(),
                 )
 
             file = await callback.bot.get_file(example_file_id)
@@ -739,7 +733,7 @@ async def image_result_regenerate_handler(callback: types.CallbackQuery, state: 
                 example_image_data=example_image_data,
                 creation_request=creation_request,
                 width=1024,
-                height=1024
+                height=1024,
             )
 
         else:
@@ -749,7 +743,7 @@ async def image_result_regenerate_handler(callback: types.CallbackQuery, state: 
                 await loading_msg.delete()
                 return await callback.message.answer(
                     "❌ Не найден предыдущий промпт",
-                    reply_markup=image_generation_results_keyboard()
+                    reply_markup=image_generation_results_keyboard(),
                 )
 
             overlay_text = data.get("last_overlay_text")
@@ -771,28 +765,26 @@ async def image_result_regenerate_handler(callback: types.CallbackQuery, state: 
 
         await callback.message.answer_photo(
             photo=BufferedInputFile(image_bytes, filename="regenerated_image.jpg"),
-            caption="✅ <b>Новый вариант готов!</b>"
+            caption="✅ <b>Новый вариант готов!</b>",
         )
 
         return await callback.message.answer(
-            "Выберите действие:",
-            reply_markup=image_generation_results_keyboard()
+            "Выберите действие:", reply_markup=image_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await callback.message.answer(
-            f"❌ Ошибка.\n\n"
-            f"Попробуйте позже",
-            reply_markup=image_generation_results_keyboard()
+            "❌ Ошибка.\n\nПопробуйте позже",
+            reply_markup=image_generation_results_keyboard(),
         )
+
 
 @router.callback_query(F.data == "image_result:edit")
 async def image_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(ImageGenerationStates.mode_selection)
     await callback.answer()
     return await callback.message.answer(
-        "🎨 <b>Генерация картинки</b>\n\n"
-        "Выберите режим работы:",
-        reply_markup=image_mode_keyboard()
+        "🎨 <b>Генерация картинки</b>\n\nВыберите режим работы:",
+        reply_markup=image_mode_keyboard(),
     )

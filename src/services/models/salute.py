@@ -23,19 +23,14 @@ class SaluteSpeechModel:
         headers = {
             "Authorization": f"Basic {auth_encoded}",
             "RqUID": str(uuid.uuid4()),
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         }
 
-        data = {
-            "scope": settings.SALUTE_SCOPE
-        }
+        data = {"scope": settings.SALUTE_SCOPE}
 
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
-                self.AUTH_URL,
-                headers=headers,
-                data=data,
-                timeout=30.0
+                self.AUTH_URL, headers=headers, data=data, timeout=30.0
             )
             response.raise_for_status()
             token_data = response.json()
@@ -44,16 +39,14 @@ class SaluteSpeechModel:
     async def _ensure_token(self):
         """Проверка и обновление токена при необходимости"""
         import time
+
         if not self.access_token or time.time() >= self.token_expires_at:
             self.access_token = await self._get_auth_token()
             self.token_expires_at = time.time() + (29 * 60)
 
     async def transcribe_audio(
-        self,
-        audio_data: bytes,
-        audio_format: str = "opus"
+        self, audio_data: bytes, audio_format: str = "opus"
     ) -> str:
-
         await self._ensure_token()
 
         headers = {
@@ -66,16 +59,14 @@ class SaluteSpeechModel:
             "pcm16": "audio/x-pcm;bit=16;rate=8000",
             "mp3": "audio/mpeg",
             "flac": "audio/flac",
-            "wav": "audio/wav"
+            "wav": "audio/wav",
         }
 
         content_type = mime_types.get(audio_format, "audio/ogg;codecs=opus")
 
         headers["Content-Type"] = content_type
 
-        params = {
-            "format": audio_format if audio_format != "opus" else "ogg_opus"
-        }
+        params = {"format": audio_format if audio_format != "opus" else "ogg_opus"}
 
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
@@ -83,7 +74,7 @@ class SaluteSpeechModel:
                 headers=headers,
                 params=params,
                 content=audio_data,
-                timeout=60.0
+                timeout=60.0,
             )
 
             # Для отладки
@@ -100,25 +91,23 @@ class SaluteSpeechModel:
             return text_res
 
     async def transcribe_from_file(
-        self,
-        file_path: str,
-        audio_format: Optional[str] = None
+        self, file_path: str, audio_format: Optional[str] = None
     ) -> str:
         path = Path(file_path)
 
         if not audio_format:
-            ext = path.suffix.lower().lstrip('.')
+            ext = path.suffix.lower().lstrip(".")
             format_map = {
-                'ogg': 'opus',
-                'opus': 'opus',
-                'wav': 'pcm16',
-                'mp3': 'mp3',
-                'flac': 'flac'
+                "ogg": "opus",
+                "opus": "opus",
+                "wav": "pcm16",
+                "mp3": "mp3",
+                "flac": "flac",
             }
-            audio_format = format_map.get(ext, 'opus')
+            audio_format = format_map.get(ext, "opus")
 
         # Читаем файл
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             audio_data = f.read()
 
         return await self.transcribe_audio(audio_data, audio_format)

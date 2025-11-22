@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 88
+exclude = [
+  ".git",
+  ".venv",
+  "build",
+  "dist",
+  "tests/data",
+  "notes",
+  "__pycache__"
+]
+
+[tool.ruff.isort]
+known-first-party = ["src"]
+
+

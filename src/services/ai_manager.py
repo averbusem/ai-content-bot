@@ -22,7 +22,7 @@ class AIManager:
         user_id: int,
         user_idea: str,
         style: str = "разговорный",
-        additional_info: Optional[str] = None
+        additional_info: Optional[str] = None,
     ) -> str:
         """Генерация свободного текста поста"""
         ngo_info = await nko_service.get_nko_data(user_id)
@@ -32,9 +32,33 @@ class AIManager:
             self.content_generator.ngo_info = None
 
         return await self.content_generator.generate_free_text_post(
-            user_idea=user_idea,
+            user_idea=user_idea, style=style, additional_info=additional_info
+        )
+
+    async def generate_structured_post(
+        self,
+        user_id: int,
+        event_type: str,
+        date: str,
+        location: str,
+        participants: str,
+        details: str,
+        style: str = "разговорный",
+    ) -> str:
+        """Генерация структурированного поста"""
+        ngo_info = await nko_service.get_nko_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
+        else:
+            self.content_generator.ngo_info = None
+
+        return await self.content_generator.generate_structured_post(
+            event_type=event_type,
+            date=date,
+            location=location,
+            participants=participants,
+            details=details,
             style=style,
-            additional_info=additional_info
         )
 
     async def generate_structured_form_post(
@@ -49,7 +73,7 @@ class AIManager:
         audience: str = "broad",
         style: str = "warm",
         length: str = "medium",
-        additional_info: Optional[str] = None
+        additional_info: Optional[str] = None,
     ) -> str:
         """Генерация поста на основе структурированной формы (10 вопросов)"""
         ngo_info = await nko_service.get_nko_data(user_id)
@@ -68,7 +92,7 @@ class AIManager:
             audience=audience,
             style=style,
             length=length,
-            additional_info=additional_info
+            additional_info=additional_info,
         )
 
     async def generate_post_from_example(
@@ -76,7 +100,7 @@ class AIManager:
         user_id: int,
         example_post: str,
         new_topic: str,
-        style: Optional[str] = None
+        style: Optional[str] = None,
     ) -> str:
         """Генерация поста на основе примера"""
         ngo_info = await nko_service.get_nko_data(user_id)
@@ -86,16 +110,11 @@ class AIManager:
             self.content_generator.ngo_info = None
 
         return await self.content_generator.generate_post_from_example(
-            example_post=example_post,
-            new_topic=new_topic,
-            style=style
+            example_post=example_post, new_topic=new_topic, style=style
         )
 
     async def edit_post(
-        self,
-        user_id: int,
-        original_post: str,
-        edit_request: str
+        self, user_id: int, original_post: str, edit_request: str
     ) -> str:
         """Редактирование поста на основе запроса пользователя"""
         ngo_info = await nko_service.get_nko_data(user_id)
@@ -104,8 +123,7 @@ class AIManager:
         else:
             self.content_generator.ngo_info = None
         return await self.content_generator.edit_post(
-            original_post=original_post,
-            edit_request=edit_request
+            original_post=original_post, edit_request=edit_request
         )
 
     async def generate_content_plan(
@@ -113,7 +131,7 @@ class AIManager:
         user_id: int,
         duration_days: int,
         posts_per_week: int,
-        preferences: Optional[str] = None
+        preferences: Optional[str] = None,
     ) -> str:
         """Создание контент-плана"""
         ngo_info = await nko_service.get_nko_data(user_id)
@@ -125,7 +143,7 @@ class AIManager:
         return await self.content_generator.generate_content_plan(
             duration_days=duration_days,
             posts_per_week=posts_per_week,
-            preferences=preferences
+            preferences=preferences,
         )
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ИЗОБРАЖЕНИЯМИ ===
@@ -187,7 +205,7 @@ class AIManager:
         source_image_data: bytes,
         edit_request: str,
         width: int = 1024,
-        height: int = 1024
+        height: int = 1024,
     ) -> bytes:
         """
         Редактирование существующего изображения
@@ -205,7 +223,7 @@ class AIManager:
             source_image_data=source_image_data,
             edit_request=edit_request,
             width=width,
-            height=height
+            height=height,
         )
 
     async def create_image_from_example(
@@ -213,7 +231,7 @@ class AIManager:
         example_image_data: bytes,
         creation_request: str,
         width: int = 1024,
-        height: int = 1024
+        height: int = 1024,
     ) -> bytes:
         """
         Создание нового изображения на основе примера
@@ -231,19 +249,16 @@ class AIManager:
             example_image_data=example_image_data,
             creation_request=creation_request,
             width=width,
-            height=height
+            height=height,
         )
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С АУДИО ===
 
     async def transcribe_voice(
-        self,
-        audio_data: bytes,
-        audio_format: str = "opus"
+        self, audio_data: bytes, audio_format: str = "opus"
     ) -> str:
         return await self.salute_speech.transcribe_audio(
-            audio_data=audio_data,
-            audio_format=audio_format
+            audio_data=audio_data, audio_format=audio_format
         )
 
     def clear_conversation_history(self):
@@ -251,3 +266,6 @@ class AIManager:
 
     def get_conversation_history(self):
         return self.gigachat.get_history()
+
+
+ai_manager = AIManager()

@@ -17,5 +17,5 @@ async def start_cmd(message: types.Message, state: FSMContext):
         "Привет! 👋\n\n"
         "Я помогу создать посты и картинки для социальных сетей вашей НКО.\n\n"
         "Выберите, что нужно сделать:",
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_keyboard(),
     )

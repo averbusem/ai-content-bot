@@ -64,7 +64,7 @@ class ImageGenerator:
             "illustration": "иллюстрация, рисунок, художественный стиль",
             "minimalism": "минималистичный стиль, простые формы, чистые линии",
             "poster": "постер, афиша, графический дизайн, привлекательный визуал",
-            "business": "деловой стиль, профессиональный вид, корпоративный дизайн"
+            "business": "деловой стиль, профессиональный вид, корпоративный дизайн",
         }
 
         color_descriptions = {
@@ -72,7 +72,7 @@ class ImageGenerator:
             "cold": "холодные цвета: синий, голубой, зелёный",
             "bright": "яркие и контрастные цвета",
             "neutral": "нейтральные и пастельные тона",
-            "auto": ""
+            "auto": "",
         }
 
         prompt_parts = [description]
@@ -88,9 +88,7 @@ class ImageGenerator:
         return ", ".join(prompt_parts)
 
     async def generate_image_prompt(
-            self,
-            post_text: str,
-            image_description: Optional[str] = None
+        self, post_text: str, image_description: Optional[str] = None
     ) -> str:
         """
         Генерация промпта для создания изображения на основе текста поста
@@ -122,9 +120,7 @@ class ImageGenerator:
 Создай промпт длиной 50-150 слов."""
 
         return await self.model.generate_text(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.7
+            prompt=prompt, system_prompt=system_prompt, temperature=0.7
         )
 
     async def generate_image(
@@ -155,7 +151,7 @@ class ImageGenerator:
             prompt=safe_prompt,
             system_prompt=IMAGE_GENERATION_SYSTEM_PROMPT,
             width=width,
-            height=height
+            height=height,
         )
         return self._apply_overlay_if_needed(
             base_image,
@@ -163,6 +159,30 @@ class ImageGenerator:
             overlay_font,
             overlay_config
         )
+
+    async def generate_image_from_params(
+        self,
+        description: str,
+        style: str,
+        colors: str,
+        width: int = 1024,
+        height: int = 1024,
+    ) -> bytes:
+        """
+        Генерация изображения на основе параметров пользователя
+
+        Args:
+            description: Описание изображения
+            style: Стиль изображения
+            colors: Цветовая палитра
+            width: Ширина изображения
+            height: Высота изображения
+
+        Returns:
+            Байты изображения
+        """
+        prompt = self.build_image_prompt(description, style, colors)
+        return await self.generate_image(prompt, width, height)
 
     async def generate_image_from_post(
             self,
@@ -205,11 +225,11 @@ class ImageGenerator:
         )
 
     async def edit_image(
-            self,
-            source_image_data: bytes,
-            edit_request: str,
-            width: int = 1024,
-            height: int = 1024
+        self,
+        source_image_data: bytes,
+        edit_request: str,
+        width: int = 1024,
+        height: int = 1024,
     ) -> bytes:
         """
         Редактирование существующего изображения через анализ → генерацию
@@ -236,8 +256,7 @@ class ImageGenerator:
 Описание должно быть детальным, но структурированным."""
 
         image_description = await self.model.analyze_image(
-            image_data=source_image_data,
-            prompt=analysis_prompt
+            image_data=source_image_data, prompt=analysis_prompt
         )
 
         generation_prompt = f"""На основе этого описания исходного изображения:
@@ -256,14 +275,11 @@ class ImageGenerator:
 Опиши детально, как должно выглядеть финальное изображение в одном абзаце (50-100 слов)."""
 
         final_prompt = await self.model.generate_text(
-            prompt=generation_prompt,
-            temperature=0.5
+            prompt=generation_prompt, temperature=0.5
         )
 
         return await self.generate_image(
-            prompt=final_prompt,
-            width=width,
-            height=height
+            prompt=final_prompt, width=width, height=height
         )
 
     async def generate_information_text(
@@ -321,11 +337,11 @@ class ImageGenerator:
         )
 
     async def create_from_example(
-            self,
-            example_image_data: bytes,
-            creation_request: str,
-            width: int = 1024,
-            height: int = 1024
+        self,
+        example_image_data: bytes,
+        creation_request: str,
+        width: int = 1024,
+        height: int = 1024,
     ) -> bytes:
         """
         Создание нового изображения на основе примера через анализ → генерацию
@@ -351,8 +367,7 @@ class ImageGenerator:
 Опиши стилистику, которую можно применить к другому изображению."""
 
         style_description = await self.model.analyze_image(
-            image_data=example_image_data,
-            prompt=analysis_prompt
+            image_data=example_image_data, prompt=analysis_prompt
         )
 
         generation_prompt = f"""Используя следующий стиль как основу:
@@ -366,12 +381,9 @@ class ImageGenerator:
 Опиши детально финальное изображение в одном абзаце (50-100 слов)."""
 
         final_prompt = await self.model.generate_text(
-            prompt=generation_prompt,
-            temperature=0.5
+            prompt=generation_prompt, temperature=0.5
         )
 
         return await self.generate_image(
-            prompt=final_prompt,
-            width=width,
-            height=height
+            prompt=final_prompt, width=width, height=height
         )

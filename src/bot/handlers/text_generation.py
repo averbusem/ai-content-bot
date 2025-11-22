@@ -2,12 +2,15 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
-from src.bot.keyboards import back_to_menu_keyboard, text_generation_results_keyboard, main_menu_keyboard
+from src.bot.keyboards import (
+    back_to_menu_keyboard,
+    text_generation_results_keyboard,
+    main_menu_keyboard,
+)
 from src.bot.states import TextGenerationStates, MainMenuStates
-from src.services.ai_manager import AIManager
+from src.services.ai_manager import ai_manager
 
 router = Router()
-ai_manager = AIManager()
 
 
 @router.callback_query(F.data == "text_gen:free_text")
@@ -27,26 +30,24 @@ async def free_text_handler(callback: types.CallbackQuery, state: FSMContext):
         "Телеграм-бот для создания ИИ контента (постов)\n"
         "Онлайн-навигатор по социальным проектам и НКО в городах присутствия Росатома"
         "в виде одностраничного сайта \n"
-        "Информационный портал для НКО городов Росатома с интерактивной картой.\"",
-        reply_markup=back_to_menu_keyboard()
+        'Информационный портал для НКО городов Росатома с интерактивной картой."',
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
-async def generate_post_with_image(message: types.Message, state: FSMContext, user_id: int, user_text: str):
+async def generate_post_with_image(
+    message: types.Message, state: FSMContext, user_id: int, user_text: str
+):
     loading_msg = await message.answer("⏳ Создаю пост...")
 
     try:
         post = await ai_manager.generate_free_text_post(
-            user_id=user_id,
-            user_idea=user_text,
-            style="разговорный"
+            user_id=user_id, user_idea=user_text, style="разговорный"
         )
 
         await loading_msg.edit_text("⏳ Создаю изображение для поста...")
 
-        image_bytes = await ai_manager.generate_image_from_post(
-            post_text=post
-        )
+        image_bytes = await ai_manager.generate_image_from_post(post_text=post)
 
         await loading_msg.delete()
 
@@ -57,20 +58,17 @@ async def generate_post_with_image(message: types.Message, state: FSMContext, us
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
         await message.answer_photo(
-            photo=image_file,
-            caption="🖼 Изображение для вашего поста"
+            photo=image_file, caption="🖼 Изображение для вашего поста"
         )
 
         return await message.answer(
-            "Выберите действие",
-            reply_markup=text_generation_results_keyboard()
+            "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
     except Exception as e:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка: {str(e)}",
-            reply_markup=back_to_menu_keyboard()
+            f"❌ Произошла ошибка: {str(e)}", reply_markup=back_to_menu_keyboard()
         )
 
 
@@ -81,7 +79,7 @@ async def free_text_input_handler(message: types.Message, state: FSMContext):
     if not user_text:
         return await message.answer(
             "Пожалуйста, отправьте текст или голосовое сообщение.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     user_id = message.from_user.id
@@ -101,8 +99,7 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
         audio_data = audio_file.read()
 
         user_text = await ai_manager.transcribe_voice(
-            audio_data=audio_data,
-            audio_format="opus"
+            audio_data=audio_data, audio_format="opus"
         )
 
         await transcribe_msg.delete()
@@ -110,7 +107,7 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
         if not user_text or not user_text.strip():
             return await message.answer(
                 "Не удалось распознать речь. Попробуйте отправить голосовое сообщение ещё раз.",
-                reply_markup=back_to_menu_keyboard()
+                reply_markup=back_to_menu_keyboard(),
             )
 
         await message.answer(f"Вы сказали: {user_text}")
@@ -119,13 +116,15 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
         await state.set_state(TextGenerationStates.waiting_results)
         await state.update_data(user_text=user_text.strip())
 
-        return await generate_post_with_image(message, state, user_id, user_text.strip())
+        return await generate_post_with_image(
+            message, state, user_id, user_text.strip()
+        )
 
     except Exception as e:
         await transcribe_msg.delete()
         return await message.answer(
             f"❌ Ошибка при распознавании речи: {str(e)}",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -133,7 +132,7 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
 async def free_text_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(
         "Пожалуйста, отправьте текстовое сообщение или голосовое сообщение с описанием.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -143,13 +142,14 @@ async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContex
     await state.set_state(MainMenuStates.main_menu)
     await callback.answer("Рад был помочь! 🎉")
     return await callback.message.answer(
-        "👋 Главное меню",
-        reply_markup=main_menu_keyboard()
+        "👋 Главное меню", reply_markup=main_menu_keyboard()
     )
 
 
 @router.callback_query(F.data == "text_result:change_image")
-async def text_result_change_image_handler(callback: types.CallbackQuery, state: FSMContext):
+async def text_result_change_image_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
     data = await state.get_data()
     post = data.get("post", "")
 
@@ -161,28 +161,24 @@ async def text_result_change_image_handler(callback: types.CallbackQuery, state:
     loading_msg = await callback.message.answer("⏳ Создаю новое изображение...")
 
     try:
-        image_bytes = await ai_manager.generate_image_from_post(
-            post_text=post
-        )
+        image_bytes = await ai_manager.generate_image_from_post(post_text=post)
 
         await loading_msg.delete()
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
         await callback.message.answer_photo(
-            photo=image_file,
-            caption="🖼 Новое изображение для вашего поста"
+            photo=image_file, caption="🖼 Новое изображение для вашего поста"
         )
 
         await callback.message.answer(
-            "Выберите действие",
-            reply_markup=text_generation_results_keyboard()
+            "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
     except Exception as e:
         await loading_msg.delete()
         await callback.message.answer(
             f"❌ Ошибка при создании изображения: {str(e)}",
-            reply_markup=text_generation_results_keyboard()
+            reply_markup=text_generation_results_keyboard(),
         )
 
 
@@ -193,7 +189,7 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
     return await callback.message.answer(
         "✏️ <b>Редактирование поста</b>\n\n"
         "Что нужно изменить в посте? Опишите ваши пожелания.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -204,7 +200,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
     if not edit_request:
         return await message.answer(
             "Пожалуйста, опишите, что нужно изменить.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     data = await state.get_data()
@@ -213,7 +209,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
     if not original_post:
         return await message.answer(
             "❌ Не найден исходный пост для редактирования.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     user_id = message.from_user.id
@@ -224,14 +220,12 @@ async def editing_handler(message: types.Message, state: FSMContext):
         updated_post = await ai_manager.generate_free_text_post(
             user_id=user_id,
             user_idea=f"Исходный пост:\n{original_post}\n\nИзменения: {edit_request}",
-            style="разговорный"
+            style="разговорный",
         )
 
         await loading_msg.edit_text("⏳ Создаю новое изображение...")
 
-        image_bytes = await ai_manager.generate_image_from_post(
-            post_text=updated_post
-        )
+        image_bytes = await ai_manager.generate_image_from_post(post_text=updated_post)
 
         await loading_msg.delete()
 
@@ -243,20 +237,18 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
         await message.answer_photo(
-            photo=image_file,
-            caption="🖼 Обновлённое изображение для поста"
+            photo=image_file, caption="🖼 Обновлённое изображение для поста"
         )
 
         return await message.answer(
-            "Выберите действие",
-            reply_markup=text_generation_results_keyboard()
+            "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
     except Exception as e:
         await loading_msg.delete()
         return await message.answer(
             f"❌ Произошла ошибка при обновлении поста: {str(e)}",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -264,5 +256,5 @@ async def editing_handler(message: types.Message, state: FSMContext):
 async def editing_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(
         "Пожалуйста, отправьте текстовое сообщение с описанием изменений.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
