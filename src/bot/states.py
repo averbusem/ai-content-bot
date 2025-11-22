@@ -20,6 +20,8 @@ class TextGenerationStates(StatesGroup):
     free_text_input = State()
     waiting_results = State()
     editing = State()
+    example_post_input = State()  # Ввод примера поста
+    example_topic_input = State()  # Ввод новой темы
 
 
 class TextGenerationStructStates(StatesGroup):
@@ -53,19 +55,19 @@ class TextEditorStates(StatesGroup):
 
 
 class ImageGenerationStates(StatesGroup):
-    mode_selection = State()           # Выбор режима
-    description = State()              # Описание
-    style = State()                    # Стиль
-    colors = State()                   # Цвета
-    overlay_mode = State()             # Нужен ли текст на фото
-    overlay_text = State()             # Ввод текста
-    overlay_position = State()         # Выбор позиции текста
-    overlay_background = State()       # Выбор заднего фона для текста
-    overlay_font = State()             # Выбор шрифты
-    upload_for_edit = State()          # Загрузка для редактирования
-    edit_prompt = State()              # Промпт редактирования
-    upload_example = State()           # Загрузка примера
-    example_prompt = State()           # Промпт по примеру
+    mode_selection = State()  # Выбор режима
+    description = State()  # Описание
+    style = State()  # Стиль
+    colors = State()  # Цвета
+    overlay_mode = State()  # Нужен ли текст на фото
+    overlay_text = State()  # Ввод текста
+    overlay_position = State()  # Выбор позиции текста
+    overlay_background = State()  # Выбор заднего фона для текста
+    overlay_font = State()  # Выбор шрифты
+    upload_for_edit = State()  # Загрузка для редактирования
+    edit_prompt = State()  # Промпт редактирования
+    upload_example = State()  # Загрузка примера
+    example_prompt = State()  # Промпт по примеру
     waiting_results = State()
 
 

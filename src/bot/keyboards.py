@@ -149,6 +149,9 @@ def text_generation_method_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
+        InlineKeyboardButton(text="📝 По примеру", callback_data="text_gen:example")
+    )
+    builder.add(
         InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
     )
 
@@ -490,11 +493,23 @@ def image_mode_keyboard() -> InlineKeyboardMarkup:
 def overlay_mode_keyboard(include_auto: bool = False) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
-    builder.add(InlineKeyboardButton(text="🖼 Без текста", callback_data="overlay_mode:none"))
-    builder.add(InlineKeyboardButton(text="📝 Добавить свою фразу", callback_data="overlay_mode:custom"))
+    builder.add(
+        InlineKeyboardButton(text="🖼 Без текста", callback_data="overlay_mode:none")
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="📝 Добавить свою фразу", callback_data="overlay_mode:custom"
+        )
+    )
     if include_auto:
-        builder.add(InlineKeyboardButton(text="🤖 Сгенерировать автоматически", callback_data="overlay_mode:auto"))
-    builder.add(InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back"))
+        builder.add(
+            InlineKeyboardButton(
+                text="🤖 Сгенерировать автоматически", callback_data="overlay_mode:auto"
+            )
+        )
+    builder.add(
+        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+    )
 
     builder.adjust(1)
     return builder.as_markup()
@@ -503,10 +518,22 @@ def overlay_mode_keyboard(include_auto: bool = False) -> InlineKeyboardMarkup:
 def overlay_position_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
-    builder.add(InlineKeyboardButton(text="⬆️ Вверху", callback_data="overlay_position:top"))
-    builder.add(InlineKeyboardButton(text="↔️ По центру", callback_data="overlay_position:center"))
-    builder.add(InlineKeyboardButton(text="⬇️ Снизу", callback_data="overlay_position:bottom"))
-    builder.add(InlineKeyboardButton(text="🔄 На выбор бота", callback_data="overlay_position:auto"))
+    builder.add(
+        InlineKeyboardButton(text="⬆️ Вверху", callback_data="overlay_position:top")
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="↔️ По центру", callback_data="overlay_position:center"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="⬇️ Снизу", callback_data="overlay_position:bottom")
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="🔄 На выбор бота", callback_data="overlay_position:auto"
+        )
+    )
 
     builder.adjust(2)
     return builder.as_markup()
@@ -515,10 +542,20 @@ def overlay_position_keyboard() -> InlineKeyboardMarkup:
 def overlay_background_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
-    builder.add(InlineKeyboardButton(text="⬛ Тёмный фон", callback_data="overlay_bg:dark"))
-    builder.add(InlineKeyboardButton(text="⬜ Светлый фон", callback_data="overlay_bg:light"))
-    builder.add(InlineKeyboardButton(text="🪟 Прозрачный", callback_data="overlay_bg:transparent"))
-    builder.add(InlineKeyboardButton(text="🔄 На выбор бота", callback_data="overlay_bg:auto"))
+    builder.add(
+        InlineKeyboardButton(text="⬛ Тёмный фон", callback_data="overlay_bg:dark")
+    )
+    builder.add(
+        InlineKeyboardButton(text="⬜ Светлый фон", callback_data="overlay_bg:light")
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="🪟 Прозрачный", callback_data="overlay_bg:transparent"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="🔄 На выбор бота", callback_data="overlay_bg:auto")
+    )
 
     builder.adjust(2)
     return builder.as_markup()
@@ -528,12 +565,15 @@ def overlay_font_keyboard(font_options: list[str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     for font in font_options:
-        label = font.capitalize() if font not in ("random", "default") else "🎲 Случайный"
+        label = (
+            font.capitalize() if font not in ("random", "default") else "🎲 Случайный"
+        )
         callback_value = font if font != "default" else "random"
-        builder.add(InlineKeyboardButton(
-            text=label,
-            callback_data=f"overlay_font:{callback_value}"
-        ))
+        builder.add(
+            InlineKeyboardButton(
+                text=label, callback_data=f"overlay_font:{callback_value}"
+            )
+        )
 
     builder.adjust(1)
     return builder.as_markup()
