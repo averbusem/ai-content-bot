@@ -20,8 +20,6 @@ class TextGenerationStates(StatesGroup):
     free_text_input = State()
     waiting_results = State()
     editing = State()
-    example_post_input = State()  # Ввод примера поста
-    example_topic_input = State()  # Ввод новой темы
 
 
 class TextGenerationStructStates(StatesGroup):
@@ -76,3 +74,10 @@ class ContentPlanStates(StatesGroup):
     frequency_input = State()
     preferences_input = State()
     waiting_results = State()
+
+
+class TextGenerationFromExampleStates(StatesGroup):
+    waiting_results = State()
+    editing = State()
+    example_post_input = State()  # Ввод примера поста
+    example_topic_input = State()  # Ввод новой темы

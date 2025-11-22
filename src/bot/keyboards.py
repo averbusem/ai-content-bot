@@ -577,3 +577,22 @@ def overlay_font_keyboard(font_options: list[str]) -> InlineKeyboardMarkup:
 
     builder.adjust(1)
     return builder.as_markup()
+
+
+def from_example_generation_results_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="✅ Всё отлично, спасибо!", callback_data="example_result:ok"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="✏️ Изменить", callback_data="example_result:edit")
+    )
+    builder.add(
+        InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()

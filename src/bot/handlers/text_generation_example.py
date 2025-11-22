@@ -3,9 +3,10 @@ from aiogram.fsm.context import FSMContext
 
 from src.bot.keyboards import (
     back_to_menu_keyboard,
-    text_generation_results_keyboard,
+    main_menu_keyboard,
+    from_example_generation_results_keyboard,
 )
-from src.bot.states import TextGenerationStates
+from src.bot.states import TextGenerationFromExampleStates, MainMenuStates
 from src.services.ai_manager import ai_manager
 
 router = Router()
@@ -14,7 +15,7 @@ router = Router()
 @router.callback_query(F.data == "text_gen:example")
 async def example_text_handler(callback: types.CallbackQuery, state: FSMContext):
     """Начало процесса генерации поста по примеру"""
-    await state.set_state(TextGenerationStates.example_post_input)
+    await state.set_state(TextGenerationFromExampleStates.example_post_input)
     await callback.answer()
 
     example_post = """📢 <b>Пример хорошего поста:</b>
@@ -46,7 +47,7 @@ async def example_text_handler(callback: types.CallbackQuery, state: FSMContext)
     )
 
 
-@router.message(TextGenerationStates.example_post_input, F.text)
+@router.message(TextGenerationFromExampleStates.example_post_input, F.text)
 async def example_post_input_handler(message: types.Message, state: FSMContext):
     """Получение примера поста от пользователя"""
     example_post = message.text.strip()
@@ -60,7 +61,7 @@ async def example_post_input_handler(message: types.Message, state: FSMContext):
 
     # Сохраняем пример поста
     await state.update_data(example_post=example_post)
-    await state.set_state(TextGenerationStates.example_topic_input)
+    await state.set_state(TextGenerationFromExampleStates.example_topic_input)
 
     return await message.answer(
         "✅ <b>Отлично! Пример получен.</b>\n\n"
@@ -74,7 +75,7 @@ async def example_post_input_handler(message: types.Message, state: FSMContext):
     )
 
 
-@router.message(TextGenerationStates.example_topic_input, F.text)
+@router.message(TextGenerationFromExampleStates.example_topic_input, F.text)
 async def example_topic_text_handler(message: types.Message, state: FSMContext):
     """Получение новой темы текстом и генерация поста"""
     new_topic = message.text.strip()
@@ -96,14 +97,14 @@ async def example_topic_text_handler(message: types.Message, state: FSMContext):
         )
 
     user_id = message.from_user.id
-    await state.set_state(TextGenerationStates.waiting_results)
+    await state.set_state(TextGenerationFromExampleStates.waiting_results)
 
     return await generate_post_from_example(
         message, state, user_id, example_post, new_topic
     )
 
 
-@router.message(TextGenerationStates.example_topic_input, F.voice)
+@router.message(TextGenerationFromExampleStates.example_topic_input, F.voice)
 async def example_topic_voice_handler(message: types.Message, state: FSMContext):
     """Получение новой темы голосом и генерация поста"""
     transcribe_msg = await message.answer("⏳ Распознаю речь...")
@@ -138,7 +139,7 @@ async def example_topic_voice_handler(message: types.Message, state: FSMContext)
             )
 
         user_id = message.from_user.id
-        await state.set_state(TextGenerationStates.waiting_results)
+        await state.set_state(TextGenerationFromExampleStates.waiting_results)
 
         return await generate_post_from_example(
             message, state, user_id, example_post, new_topic.strip()
@@ -152,7 +153,7 @@ async def example_topic_voice_handler(message: types.Message, state: FSMContext)
         )
 
 
-@router.message(TextGenerationStates.example_topic_input)
+@router.message(TextGenerationFromExampleStates.example_topic_input)
 async def example_topic_invalid_handler(message: types.Message, state: FSMContext):
     """Обработка неправильного формата ввода темы"""
     return await message.answer(
@@ -161,7 +162,7 @@ async def example_topic_invalid_handler(message: types.Message, state: FSMContex
     )
 
 
-@router.message(TextGenerationStates.example_post_input)
+@router.message(TextGenerationFromExampleStates.example_post_input)
 async def example_post_invalid_handler(message: types.Message, state: FSMContext):
     """Обработка неправильного формата ввода примера"""
     return await message.answer(
@@ -181,7 +182,6 @@ async def generate_post_from_example(
     loading_msg = await message.answer("⏳ Анализирую пример и создаю новый пост...")
 
     try:
-        # Генерируем пост на основе примера
         post = await ai_manager.generate_post_from_example(
             user_id=user_id,
             example_post=example_post,
@@ -190,14 +190,13 @@ async def generate_post_from_example(
 
         await loading_msg.delete()
 
-        # Сохраняем пост в состоянии
         await state.update_data(post=post, has_image=False)
 
         await message.answer("✨ <b>Готово! Ваш пост в стиле примера:</b>")
         await message.answer(f"{post}")
 
         return await message.answer(
-            "Выберите действие", reply_markup=text_generation_results_keyboard()
+            "Выберите действие", reply_markup=from_example_generation_results_keyboard()
         )
 
     except Exception:
@@ -206,3 +205,80 @@ async def generate_post_from_example(
             "❌ Произошла ошибка. Попробуйте позже",
             reply_markup=back_to_menu_keyboard(),
         )
+
+
+@router.callback_query(F.data == "example_result:ok")
+async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await state.set_state(MainMenuStates.main_menu)
+    await callback.answer("Рад был помочь! 🎉")
+    return await callback.message.answer(
+        "👋 Главное меню", reply_markup=main_menu_keyboard()
+    )
+
+
+@router.callback_query(F.data == "example_result:edit")
+async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(TextGenerationFromExampleStates.editing)
+    await callback.answer()
+    return await callback.message.answer(
+        "✏️ <b>Редактирование поста</b>\n\n"
+        "Что нужно изменить в посте? Опишите ваши пожелания.",
+        reply_markup=back_to_menu_keyboard(),
+    )
+
+
+@router.message(TextGenerationFromExampleStates.editing, F.text)
+async def editing_handler(message: types.Message, state: FSMContext):
+    edit_request = message.text.strip()
+
+    if not edit_request:
+        return await message.answer(
+            "Пожалуйста, опишите, что нужно изменить.",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    data = await state.get_data()
+    original_post = data.get("post", "")
+
+    if not original_post:
+        return await message.answer(
+            "❌ Не найден исходный пост для редактирования.",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    user_id = message.from_user.id
+
+    loading_msg = await message.answer("⏳ Обновляю пост...")
+
+    try:
+        updated_post = await ai_manager.edit_post(
+            user_id=user_id,
+            original_post=original_post,
+            edit_request=edit_request,
+        )
+
+        await state.update_data(post=updated_post)
+        await state.set_state(TextGenerationFromExampleStates.waiting_results)
+
+        await message.answer("✨ <b>Пост обновлён:</b>")
+        await message.answer(f"{updated_post}")
+
+        return await message.answer(
+            "Выберите действие", reply_markup=from_example_generation_results_keyboard()
+        )
+
+    except Exception:
+        await loading_msg.delete()
+        return await message.answer(
+            "❌ Произошла ошибка при обновлении поста. Попробуйте ещё раз позже",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+
+@router.message(TextGenerationFromExampleStates.editing)
+async def editing_invalid_handler(message: types.Message, state: FSMContext):
+    return await message.answer(
+        "Пожалуйста, отправьте текстовое сообщение с описанием изменений.",
+        reply_markup=back_to_menu_keyboard(),
+    )
