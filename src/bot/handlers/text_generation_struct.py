@@ -13,11 +13,78 @@ from src.bot.keyboards import (
     struct_form_style_keyboard,
     struct_form_length_keyboard,
     struct_form_skip_keyboard,
+    overlay_mode_keyboard,
+    overlay_position_keyboard,
+    overlay_background_keyboard,
+    overlay_font_keyboard
 )
 from src.bot.states import TextGenerationStructStates, MainMenuStates
+from src.services.text_overlay import TextOverlayConfig
 from src.services.ai_manager import ai_manager
 
 router = Router()
+
+
+def _struct_get_font_options(limit: int = 3) -> list[str]:
+    service = ai_manager.image_generator.text_overlay
+    if not service:
+        return ["random"]
+
+    fonts = [font for font in service.list_fonts() if font and font != "default"]
+    if not fonts:
+        fonts = []
+
+    fonts = fonts[:limit]
+    if "random" not in fonts:
+        fonts.append("random")
+    return fonts
+
+
+def _struct_build_overlay_config(position: str | None, background: str | None) -> TextOverlayConfig | None:
+    if not position and (not background or background == "auto"):
+        return None
+
+    config = TextOverlayConfig()
+
+    if position and position != "auto":
+        config.position = position
+
+    if background:
+        if background == "dark":
+            config.background_color = (0, 0, 0, 210)
+            config.text_color = (255, 255, 255, 255)
+        elif background == "light":
+            config.background_color = (255, 255, 255, 235)
+            config.text_color = (20, 20, 20, 255)
+        elif background == "transparent":
+            config.background_color = (0, 0, 0, 0)
+            config.text_color = (255, 255, 255, 255)
+
+    return config
+
+
+async def _start_struct_post_generation(callback_or_message, state: FSMContext):
+    data = await state.get_data()
+    user_id = callback_or_message.from_user.id
+    await state.set_state(TextGenerationStructStates.waiting_results)
+    return await generate_struct_post_with_image(callback_or_message, state, data, user_id)
+
+
+async def _generate_struct_image(post_text: str, data: dict) -> bytes:
+    overlay_mode = data.get("overlay_mode", "none")
+    overlay_text = data.get("overlay_text")
+    overlay_font = data.get("overlay_font")
+    overlay_position = data.get("overlay_position")
+    overlay_background = data.get("overlay_background")
+    overlay_config = _struct_build_overlay_config(overlay_position, overlay_background)
+
+    return await ai_manager.generate_image_from_post(
+        post_text=post_text,
+        include_info_block=(overlay_mode == "auto"),
+        prepared_info_text=overlay_text if overlay_mode == "custom" else None,
+        overlay_font=overlay_font,
+        overlay_config=overlay_config
+    )
 
 
 @router.callback_query(F.data == "text_gen:struct")
@@ -449,10 +516,17 @@ async def generate_struct_post_with_image(
 
         await loading_msg.edit_text("⏳ Создаю изображение для поста...")
 
-        image_bytes = await ai_manager.generate_image_from_post(post_text=post)
+        image_bytes = await _generate_struct_image(post, data)
 
         await loading_msg.delete()
-        await state.update_data(post=post)
+        await state.update_data(
+            post=post,
+            overlay_mode=data.get("overlay_mode", "none"),
+            overlay_text=data.get("overlay_text") if data.get("overlay_mode") == "custom" else None,
+            overlay_position=data.get("overlay_position"),
+            overlay_background=data.get("overlay_background"),
+            overlay_font=data.get("overlay_font")
+        )
 
         if is_callback:
             await callback_or_message.message.answer("✨ <b>Готово! Ваш пост:</b>")
@@ -484,11 +558,13 @@ async def generate_struct_post_with_image(
 
         if is_callback:
             return await callback_or_message.message.answer(
-                f"❌ Произошла ошибка: {str(e)}", reply_markup=back_to_menu_keyboard()
+                f"❌ Произошла ошибка. Попробуйте ещё раз позже",
+                reply_markup=back_to_menu_keyboard()
             )
         else:
             return await callback_or_message.answer(
-                f"❌ Произошла ошибка: {str(e)}", reply_markup=back_to_menu_keyboard()
+                f"❌ Произошла ошибка. Попробуйте ещё раз позже",
+                reply_markup=back_to_menu_keyboard()
             )
 
 
@@ -498,13 +574,13 @@ async def generate_struct_post_with_image(
 )
 async def question_10_skip_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(additional_info=None)
-    await state.set_state(TextGenerationStructStates.waiting_results)
+    await state.set_state(TextGenerationStructStates.image_overlay_mode)
     await callback.answer()
 
-    data = await state.get_data()
-    user_id = callback.from_user.id
-
-    return await generate_struct_post_with_image(callback, state, data, user_id)
+    return await callback.message.edit_text(
+        "🖼 <b>Нужно ли добавить текст на картинку для поста?</b>",
+        reply_markup=overlay_mode_keyboard(include_auto=True)
+    )
 
 
 @router.message(TextGenerationStructStates.question_10_additional, F.text)
@@ -518,12 +594,12 @@ async def question_10_additional_handler(message: types.Message, state: FSMConte
         )
 
     await state.update_data(additional_info=additional_text)
-    await state.set_state(TextGenerationStructStates.waiting_results)
+    await state.set_state(TextGenerationStructStates.image_overlay_mode)
 
-    data = await state.get_data()
-    user_id = message.from_user.id
-
-    return await generate_struct_post_with_image(message, state, data, user_id)
+    return await message.answer(
+        "🖼 <b>Нужно ли добавить текст на картинку для поста?</b>",
+        reply_markup=overlay_mode_keyboard(include_auto=True)
+    )
 
 
 @router.message(TextGenerationStructStates.question_10_additional)
@@ -532,6 +608,111 @@ async def question_10_invalid_handler(message: types.Message, state: FSMContext)
         "Пожалуйста, отправьте текстовое сообщение с дополнительной информацией или нажмите 'Пропустить'.",
         reply_markup=struct_form_skip_keyboard(),
     )
+
+
+# Настройка изображения для структурированного поста
+@router.callback_query(TextGenerationStructStates.image_overlay_mode, F.data.startswith("overlay_mode:"))
+async def struct_overlay_mode_handler(callback: types.CallbackQuery, state: FSMContext):
+    mode = callback.data.split(":")[1]
+    await callback.answer()
+
+    if mode == "none":
+        await state.update_data(
+            overlay_mode="none",
+            overlay_text=None,
+            overlay_position=None,
+            overlay_background=None,
+            overlay_font=None
+        )
+        return await _start_struct_post_generation(callback, state)
+
+    if mode == "custom":
+        await state.update_data(overlay_mode="custom")
+        await state.set_state(TextGenerationStructStates.image_overlay_text)
+        return await callback.message.edit_text(
+            "✍️ <b>Введите фразу для картинки</b>\n\n"
+            "Например: «Регистрация открыта», «15 декабря 18:00», «Энергия добра».\n"
+            "Фраза должна быть короткой и информативной.",
+            reply_markup=back_to_menu_keyboard()
+        )
+
+    # Автоматический текст
+    await state.update_data(
+        overlay_mode="auto",
+        overlay_text=None
+    )
+    await state.set_state(TextGenerationStructStates.image_overlay_position)
+
+    return await callback.message.edit_text(
+        "📍 <b>Где разместить текст на изображении?</b>",
+        reply_markup=overlay_position_keyboard()
+    )
+
+
+@router.message(TextGenerationStructStates.image_overlay_text, F.text)
+async def struct_overlay_text_handler(message: types.Message, state: FSMContext):
+    text_value = message.text.strip()
+
+    if not text_value:
+        return await message.answer(
+            "Пожалуйста, отправьте текст для подписи.",
+            reply_markup=back_to_menu_keyboard()
+        )
+
+    await state.update_data(overlay_text=text_value)
+    await state.set_state(TextGenerationStructStates.image_overlay_position)
+
+    return await message.answer(
+        "📍 <b>Где разместить текст на изображении?</b>",
+        reply_markup=overlay_position_keyboard()
+    )
+
+
+@router.message(TextGenerationStructStates.image_overlay_text)
+async def struct_overlay_text_invalid(message: types.Message):
+    return await message.answer(
+        "Пожалуйста, отправьте текстовую подпись.",
+        reply_markup=back_to_menu_keyboard()
+    )
+
+
+@router.callback_query(TextGenerationStructStates.image_overlay_position, F.data.startswith("overlay_position:"))
+async def struct_overlay_position_handler(callback: types.CallbackQuery, state: FSMContext):
+    position = callback.data.split(":")[1]
+    await callback.answer()
+
+    await state.update_data(overlay_position=None if position == "auto" else position)
+    await state.set_state(TextGenerationStructStates.image_overlay_background)
+
+    return await callback.message.edit_text(
+        "🎨 <b>Выберите фон для текста</b>",
+        reply_markup=overlay_background_keyboard()
+    )
+
+
+@router.callback_query(TextGenerationStructStates.image_overlay_background, F.data.startswith("overlay_bg:"))
+async def struct_overlay_background_handler(callback: types.CallbackQuery, state: FSMContext):
+    background = callback.data.split(":")[1]
+    await callback.answer()
+
+    await state.update_data(overlay_background=None if background == "auto" else background)
+    await state.set_state(TextGenerationStructStates.image_overlay_font)
+
+    font_options = _struct_get_font_options()
+
+    return await callback.message.edit_text(
+        "🔠 <b>Выберите стиль шрифта</b>",
+        reply_markup=overlay_font_keyboard(font_options)
+    )
+
+
+@router.callback_query(TextGenerationStructStates.image_overlay_font, F.data.startswith("overlay_font:"))
+async def struct_overlay_font_handler(callback: types.CallbackQuery, state: FSMContext):
+    font_value = callback.data.split(":")[1]
+    await callback.answer()
+
+    await state.update_data(overlay_font=None if font_value == "random" else font_value)
+    return await _start_struct_post_generation(callback, state)
 
 
 # Обработка результатов
@@ -564,8 +745,7 @@ async def text_result_change_image_handler(
     loading_msg = await callback.message.answer("⏳ Создаю новое изображение...")
 
     try:
-        # Создаём новое изображение
-        image_bytes = await ai_manager.generate_image_from_post(post_text=post)
+        image_bytes = await _generate_struct_image(post, data)
 
         await loading_msg.delete()
 
@@ -579,10 +759,10 @@ async def text_result_change_image_handler(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except:
         await loading_msg.delete()
         await callback.message.answer(
-            f"❌ Ошибка при создании изображения: {str(e)}",
+            f"❌ Ошибка при создании изображения. Попробуйте ещё раз позже",
             reply_markup=text_generation_results_keyboard(),
         )
 
@@ -632,8 +812,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
         await loading_msg.edit_text("⏳ Создаю новое изображение...")
 
-        # Создаём новое изображение
-        image_bytes = await ai_manager.generate_image_from_post(post_text=updated_post)
+        image_bytes = await _generate_struct_image(updated_post, data)
 
         await loading_msg.delete()
         await state.update_data(post=updated_post)
@@ -651,10 +830,10 @@ async def editing_handler(message: types.Message, state: FSMContext):
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка: {str(e)}", reply_markup=back_to_menu_keyboard()
+            f"❌ Произошла ошибка. Попробуйте позже", reply_markup=back_to_menu_keyboard()
         )
 
 

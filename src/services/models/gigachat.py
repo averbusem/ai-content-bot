@@ -58,7 +58,9 @@ class GigaChatModel:
             self.token_expires_at = time.time() + (30 * 60)
 
     async def analyze_image(
-        self, image_data: bytes, prompt: str = "Подробно опиши это изображение"
+            self,
+            image_data: bytes,
+            prompt: str = f"Максимально подробно опиши это изображение, чтобы не упустить все детали на нём"
     ) -> str:
         await self._ensure_token()
 
