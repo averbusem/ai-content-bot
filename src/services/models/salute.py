@@ -77,14 +77,8 @@ class SaluteSpeechModel:
                 timeout=60.0,
             )
 
-            # Для отладки
-            if response.status_code != 200:
-                print(f"Status: {response.status_code}")
-                print(f"Response: {response.text}")
-
             response.raise_for_status()
             result = response.json()
-            print(result)
 
             res_arr = result.get("result", "")
             text_res = " ".join(res_arr)

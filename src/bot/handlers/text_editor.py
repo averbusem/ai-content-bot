@@ -49,10 +49,10 @@ async def edit_request_handler(message: types.Message, state: FSMContext):
             original_post=state_data["original_text"],
             edit_request=edit_text,
         )
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при создании поста: {str(e)}",
+            "❌ Произошла ошибка при создании поста. Попробуйте ещё раз позже",
             reply_markup=back_to_menu_keyboard(),
         )
 
@@ -134,10 +134,10 @@ async def editing_handler(message: types.Message, state: FSMContext):
         edited_text, errors, recommendations = await ai_manager.edit_post(
             user_id=user_id, original_post=original_post, edit_request=edit_text
         )
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при обновлении поста: {str(e)}",
+            "❌ Произошла ошибка при обновлении поста. Попробуйте ещё раз позже",
             reply_markup=back_to_menu_keyboard(),
         )
 
