@@ -41,8 +41,8 @@ class TextGenerationStructStates(StatesGroup):
 
 
 class TextEditorStates(StatesGroup):
-    post_input = State()
-    edit_input = State()
+    original_text = State()
+    edit_request = State()
     waiting_results = State()
     editing = State()
 

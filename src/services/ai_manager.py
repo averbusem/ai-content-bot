@@ -113,7 +113,7 @@ class AIManager:
 
     async def edit_post(
         self, user_id: int, original_post: str, edit_request: str
-    ) -> str:
+    ) -> tuple[str, list[str], list[str]]:
         """Редактирование поста на основе запроса пользователя"""
         ngo_info = await nko_service.get_nko_data(user_id)
         if ngo_info:

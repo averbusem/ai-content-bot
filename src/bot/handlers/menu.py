@@ -40,7 +40,7 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
 @router.callback_query(F.data == "main_menu:text_editor")
 async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
-    await state.set_state(TextEditorStates.post_input)
+    await state.set_state(TextEditorStates.original_text)
     return await callback.message.edit_text(
         "✏️ Редактор текста\n\nПришлите Ваш пост и мы исправим все ошибки!",
         reply_markup=back_to_menu_keyboard(),
