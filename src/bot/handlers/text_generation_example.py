@@ -1,6 +1,7 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
+from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
     back_to_menu_keyboard,
     main_menu_keyboard,
@@ -13,6 +14,7 @@ router = Router()
 
 
 @router.callback_query(F.data == "text_gen:example")
+@check_user_limit()
 async def example_text_handler(callback: types.CallbackQuery, state: FSMContext):
     """Начало процесса генерации поста по примеру"""
     await state.set_state(TextGenerationFromExampleStates.example_post_input)
@@ -195,6 +197,8 @@ async def generate_post_from_example(
         await message.answer("✨ <b>Готово! Ваш пост в стиле примера:</b>")
         await message.answer(f"{post}")
 
+        await track_user_operation(user_id)
+
         return await message.answer(
             "Выберите действие", reply_markup=from_example_generation_results_keyboard()
         )
@@ -218,6 +222,7 @@ async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContex
 
 
 @router.callback_query(F.data == "example_result:edit")
+@check_user_limit()
 async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextGenerationFromExampleStates.editing)
     await callback.answer()
@@ -263,6 +268,8 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
         await message.answer("✨ <b>Пост обновлён:</b>")
         await message.answer(f"{updated_post}")
+
+        await track_user_operation(user_id)
 
         return await message.answer(
             "Выберите действие", reply_markup=from_example_generation_results_keyboard()

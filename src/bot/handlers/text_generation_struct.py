@@ -2,6 +2,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
+from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
     back_to_menu_keyboard,
     text_generation_results_keyboard,
@@ -16,7 +17,7 @@ from src.bot.keyboards import (
     overlay_mode_keyboard,
     overlay_position_keyboard,
     overlay_background_keyboard,
-    overlay_font_keyboard
+    overlay_font_keyboard,
 )
 from src.bot.states import TextGenerationStructStates, MainMenuStates
 from src.services.text_overlay import TextOverlayConfig
@@ -40,7 +41,9 @@ def _struct_get_font_options(limit: int = 3) -> list[str]:
     return fonts
 
 
-def _struct_build_overlay_config(position: str | None, background: str | None) -> TextOverlayConfig | None:
+def _struct_build_overlay_config(
+    position: str | None, background: str | None
+) -> TextOverlayConfig | None:
     if not position and (not background or background == "auto"):
         return None
 
@@ -67,7 +70,9 @@ async def _start_struct_post_generation(callback_or_message, state: FSMContext):
     data = await state.get_data()
     user_id = callback_or_message.from_user.id
     await state.set_state(TextGenerationStructStates.waiting_results)
-    return await generate_struct_post_with_image(callback_or_message, state, data, user_id)
+    return await generate_struct_post_with_image(
+        callback_or_message, state, data, user_id
+    )
 
 
 async def _generate_struct_image(post_text: str, data: dict) -> bytes:
@@ -83,11 +88,12 @@ async def _generate_struct_image(post_text: str, data: dict) -> bytes:
         include_info_block=(overlay_mode == "auto"),
         prepared_info_text=overlay_text if overlay_mode == "custom" else None,
         overlay_font=overlay_font,
-        overlay_config=overlay_config
+        overlay_config=overlay_config,
     )
 
 
 @router.callback_query(F.data == "text_gen:struct")
+@check_user_limit()
 async def struct_form_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextGenerationStructStates.method_selection)
     await callback.answer()
@@ -522,49 +528,51 @@ async def generate_struct_post_with_image(
         await state.update_data(
             post=post,
             overlay_mode=data.get("overlay_mode", "none"),
-            overlay_text=data.get("overlay_text") if data.get("overlay_mode") == "custom" else None,
+            overlay_text=data.get("overlay_text")
+            if data.get("overlay_mode") == "custom"
+            else None,
             overlay_position=data.get("overlay_position"),
             overlay_background=data.get("overlay_background"),
-            overlay_font=data.get("overlay_font")
+            overlay_font=data.get("overlay_font"),
         )
 
         if is_callback:
             await callback_or_message.message.answer("✨ <b>Готово! Ваш пост:</b>")
-            await callback_or_message.message.answer(f"{post}")
 
             image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
             await callback_or_message.message.answer_photo(
-                photo=image_file, caption="🖼 Изображение для вашего поста"
+                photo=image_file, caption=post
             )
+
+            await track_user_operation(user_id)
 
             return await callback_or_message.message.answer(
                 "Выберите действие", reply_markup=text_generation_results_keyboard()
             )
         else:
             await callback_or_message.answer("✨ <b>Готово! Ваш пост:</b>")
-            await callback_or_message.answer(f"{post}")
 
             image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-            await callback_or_message.answer_photo(
-                photo=image_file, caption="🖼 Изображение для вашего поста"
-            )
+            await callback_or_message.answer_photo(photo=image_file, caption=post)
+
+            await track_user_operation(user_id)
 
             return await callback_or_message.answer(
                 "Выберите действие", reply_markup=text_generation_results_keyboard()
             )
 
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
 
         if is_callback:
             return await callback_or_message.message.answer(
-                f"❌ Произошла ошибка. Попробуйте ещё раз позже",
-                reply_markup=back_to_menu_keyboard()
+                "❌ Произошла ошибка. Попробуйте ещё раз позже",
+                reply_markup=back_to_menu_keyboard(),
             )
         else:
             return await callback_or_message.answer(
-                f"❌ Произошла ошибка. Попробуйте ещё раз позже",
-                reply_markup=back_to_menu_keyboard()
+                "❌ Произошла ошибка. Попробуйте ещё раз позже",
+                reply_markup=back_to_menu_keyboard(),
             )
 
 
@@ -579,7 +587,7 @@ async def question_10_skip_handler(callback: types.CallbackQuery, state: FSMCont
 
     return await callback.message.edit_text(
         "🖼 <b>Нужно ли добавить текст на картинку для поста?</b>",
-        reply_markup=overlay_mode_keyboard(include_auto=True)
+        reply_markup=overlay_mode_keyboard(include_auto=True),
     )
 
 
@@ -598,7 +606,7 @@ async def question_10_additional_handler(message: types.Message, state: FSMConte
 
     return await message.answer(
         "🖼 <b>Нужно ли добавить текст на картинку для поста?</b>",
-        reply_markup=overlay_mode_keyboard(include_auto=True)
+        reply_markup=overlay_mode_keyboard(include_auto=True),
     )
 
 
@@ -611,7 +619,9 @@ async def question_10_invalid_handler(message: types.Message, state: FSMContext)
 
 
 # Настройка изображения для структурированного поста
-@router.callback_query(TextGenerationStructStates.image_overlay_mode, F.data.startswith("overlay_mode:"))
+@router.callback_query(
+    TextGenerationStructStates.image_overlay_mode, F.data.startswith("overlay_mode:")
+)
 async def struct_overlay_mode_handler(callback: types.CallbackQuery, state: FSMContext):
     mode = callback.data.split(":")[1]
     await callback.answer()
@@ -622,7 +632,7 @@ async def struct_overlay_mode_handler(callback: types.CallbackQuery, state: FSMC
             overlay_text=None,
             overlay_position=None,
             overlay_background=None,
-            overlay_font=None
+            overlay_font=None,
         )
         return await _start_struct_post_generation(callback, state)
 
@@ -633,19 +643,16 @@ async def struct_overlay_mode_handler(callback: types.CallbackQuery, state: FSMC
             "✍️ <b>Введите фразу для картинки</b>\n\n"
             "Например: «Регистрация открыта», «15 декабря 18:00», «Энергия добра».\n"
             "Фраза должна быть короткой и информативной.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     # Автоматический текст
-    await state.update_data(
-        overlay_mode="auto",
-        overlay_text=None
-    )
+    await state.update_data(overlay_mode="auto", overlay_text=None)
     await state.set_state(TextGenerationStructStates.image_overlay_position)
 
     return await callback.message.edit_text(
         "📍 <b>Где разместить текст на изображении?</b>",
-        reply_markup=overlay_position_keyboard()
+        reply_markup=overlay_position_keyboard(),
     )
 
 
@@ -656,7 +663,7 @@ async def struct_overlay_text_handler(message: types.Message, state: FSMContext)
     if not text_value:
         return await message.answer(
             "Пожалуйста, отправьте текст для подписи.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     await state.update_data(overlay_text=text_value)
@@ -664,20 +671,24 @@ async def struct_overlay_text_handler(message: types.Message, state: FSMContext)
 
     return await message.answer(
         "📍 <b>Где разместить текст на изображении?</b>",
-        reply_markup=overlay_position_keyboard()
+        reply_markup=overlay_position_keyboard(),
     )
 
 
 @router.message(TextGenerationStructStates.image_overlay_text)
 async def struct_overlay_text_invalid(message: types.Message):
     return await message.answer(
-        "Пожалуйста, отправьте текстовую подпись.",
-        reply_markup=back_to_menu_keyboard()
+        "Пожалуйста, отправьте текстовую подпись.", reply_markup=back_to_menu_keyboard()
     )
 
 
-@router.callback_query(TextGenerationStructStates.image_overlay_position, F.data.startswith("overlay_position:"))
-async def struct_overlay_position_handler(callback: types.CallbackQuery, state: FSMContext):
+@router.callback_query(
+    TextGenerationStructStates.image_overlay_position,
+    F.data.startswith("overlay_position:"),
+)
+async def struct_overlay_position_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
     position = callback.data.split(":")[1]
     await callback.answer()
 
@@ -685,28 +696,36 @@ async def struct_overlay_position_handler(callback: types.CallbackQuery, state: 
     await state.set_state(TextGenerationStructStates.image_overlay_background)
 
     return await callback.message.edit_text(
-        "🎨 <b>Выберите фон для текста</b>",
-        reply_markup=overlay_background_keyboard()
+        "🎨 <b>Выберите фон для текста</b>", reply_markup=overlay_background_keyboard()
     )
 
 
-@router.callback_query(TextGenerationStructStates.image_overlay_background, F.data.startswith("overlay_bg:"))
-async def struct_overlay_background_handler(callback: types.CallbackQuery, state: FSMContext):
+@router.callback_query(
+    TextGenerationStructStates.image_overlay_background,
+    F.data.startswith("overlay_bg:"),
+)
+async def struct_overlay_background_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
     background = callback.data.split(":")[1]
     await callback.answer()
 
-    await state.update_data(overlay_background=None if background == "auto" else background)
+    await state.update_data(
+        overlay_background=None if background == "auto" else background
+    )
     await state.set_state(TextGenerationStructStates.image_overlay_font)
 
     font_options = _struct_get_font_options()
 
     return await callback.message.edit_text(
         "🔠 <b>Выберите стиль шрифта</b>",
-        reply_markup=overlay_font_keyboard(font_options)
+        reply_markup=overlay_font_keyboard(font_options),
     )
 
 
-@router.callback_query(TextGenerationStructStates.image_overlay_font, F.data.startswith("overlay_font:"))
+@router.callback_query(
+    TextGenerationStructStates.image_overlay_font, F.data.startswith("overlay_font:")
+)
 async def struct_overlay_font_handler(callback: types.CallbackQuery, state: FSMContext):
     font_value = callback.data.split(":")[1]
     await callback.answer()
@@ -730,6 +749,7 @@ async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContex
 @router.callback_query(
     F.data == "text_result:change_image", TextGenerationStructStates.waiting_results
 )
+@check_user_limit()
 async def text_result_change_image_handler(
     callback: types.CallbackQuery, state: FSMContext
 ):
@@ -751,18 +771,18 @@ async def text_result_change_image_handler(
 
         # Отправляем новое изображение
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await callback.message.answer_photo(
-            photo=image_file, caption="🖼 Новое изображение для вашего поста"
-        )
+        await callback.message.answer_photo(photo=image_file, caption=post)
 
-        await callback.message.answer(
+        await track_user_operation(callback.from_user.id)
+
+        return await callback.message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except:
+    except Exception:
         await loading_msg.delete()
         await callback.message.answer(
-            f"❌ Ошибка при создании изображения. Попробуйте ещё раз позже",
+            "❌ Ошибка при создании изображения. Попробуйте ещё раз позже",
             reply_markup=text_generation_results_keyboard(),
         )
 
@@ -770,6 +790,7 @@ async def text_result_change_image_handler(
 @router.callback_query(
     F.data == "text_result:edit", TextGenerationStructStates.waiting_results
 )
+@check_user_limit()
 async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextGenerationStructStates.editing)
     await callback.answer()
@@ -822,18 +843,19 @@ async def editing_handler(message: types.Message, state: FSMContext):
         await message.answer(f"{updated_post}")
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await message.answer_photo(
-            photo=image_file, caption="🖼 Обновлённое изображение для поста"
-        )
+        await message.answer_photo(photo=image_file, caption=updated_post)
+
+        await track_user_operation(user_id)
 
         return await message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка. Попробуйте позже", reply_markup=back_to_menu_keyboard()
+            "❌ Произошла ошибка. Попробуйте позже",
+            reply_markup=back_to_menu_keyboard(),
         )
 
 

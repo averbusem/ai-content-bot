@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, List, Dict
 from src.config import settings
+from src.services.service_decorators import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,9 @@ class GigaChatModel:
         else:
             return {"verify": False}
 
+    @with_retry
     async def _get_auth_token(self) -> str:
-        """Получение токена авторизации"""
+        """Получение токена авторизации с retry"""
         auth_string = f"{settings.GIGACHAT_CLIENT_ID}:{settings.GIGACHAT_CLIENT_SECRET}"
         auth_encoded = base64.b64encode(auth_string.encode()).decode()
 
@@ -90,6 +92,7 @@ class GigaChatModel:
             self.access_token = await self._get_auth_token()
             self.token_expires_at = time.time() + (30 * 60)
 
+    @with_retry
     async def analyze_image(
         self,
         image_data: bytes,
@@ -177,6 +180,7 @@ class GigaChatModel:
                     f"Ошибка анализа изображения: HTTP {e.response.status_code}: {error_detail}"
                 )
 
+    @with_retry
     async def generate_text(
         self,
         prompt: str,
@@ -270,6 +274,7 @@ class GigaChatModel:
                     error_detail = e.response.text
                 raise Exception(f"HTTP {e.response.status_code}: {error_detail}")
 
+    @with_retry
     async def generate_image(
         self,
         prompt: str,

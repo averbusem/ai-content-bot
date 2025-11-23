@@ -6,6 +6,7 @@ import uuid
 from typing import Optional
 from pathlib import Path
 from src.config import settings
+from src.services.service_decorators import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,9 @@ class SaluteSpeechModel:
         self.access_token: Optional[str] = None
         self.token_expires_at: float = 0
 
-        # Путь к сертификату (должен совпадать с setup_certificates.py)
-        project_root = Path(__file__).parent.parent
+        project_root = Path(__file__).parent.parent.parent
         self.cert_path = project_root / "certificates" / "russian_trusted_root_ca.cer"
 
-        # Создаем SSL контекст с сертификатом
         self.ssl_context = self._create_ssl_context()
 
     def _create_ssl_context(self) -> Optional[ssl.SSLContext]:
@@ -50,8 +49,9 @@ class SaluteSpeechModel:
             logger.warning("Salute: Использование verify=False (сертификат недоступен)")
             return {"verify": False}
 
+    @with_retry
     async def _get_auth_token(self) -> str:
-        """Получение токена авторизации"""
+        """Получение токена авторизации с retry"""
         auth_string = f"{settings.SALUTE_CLIENT_ID}:{settings.SALUTE_CLIENT_SECRET}"
         auth_encoded = base64.b64encode(auth_string.encode()).decode()
 
@@ -94,6 +94,7 @@ class SaluteSpeechModel:
             self.access_token = await self._get_auth_token()
             self.token_expires_at = time.time() + (29 * 60)
 
+    @with_retry
     async def transcribe_audio(
         self, audio_data: bytes, audio_format: str = "opus"
     ) -> str:
@@ -113,7 +114,6 @@ class SaluteSpeechModel:
             "Authorization": f"Bearer {self.access_token}",
         }
 
-        # Определяем MIME тип
         mime_types = {
             "opus": "audio/ogg;codecs=opus",
             "pcm16": "audio/x-pcm;bit=16;rate=8000",
@@ -193,7 +193,6 @@ class SaluteSpeechModel:
             }
             audio_format = format_map.get(ext, "opus")
 
-        # Читаем файл
         with open(file_path, "rb") as f:
             audio_data = f.read()
 

@@ -40,5 +40,14 @@ class Settings(BaseSettings):
     SALUTE_CLIENT_SECRET: str = ""
     SALUTE_SCOPE: str = "SALUTE_SPEECH_PERS"
 
+    # User operations limit
+    USER_OPERATIONS_LIMIT: int = int(1)
+    USER_OPERATIONS_WINDOW: int = int(360)
+
+    # Rate Limiter
+    MAX_RETRIES: int = int(3)
+    RETRY_MIN_WAIT: int = int(1)
+    RETRY_MAX_WAIT: int = int(10)
+
 
 settings = Settings()

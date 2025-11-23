@@ -4,6 +4,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
+from src.bot.bot_decorators import track_user_operation, check_user_limit
 from src.bot.keyboards import (
     back_to_menu_keyboard,
     image_style_keyboard,
@@ -147,6 +148,8 @@ async def _start_manual_image_generation(
             caption="✅ <b>Готово! Вот ваше изображение.</b>",
         )
 
+        await track_user_operation(user_id=callback.from_user.id)
+
         return await callback.message.answer(
             "Выберите действие:", reply_markup=image_generation_results_keyboard()
         )
@@ -174,6 +177,7 @@ async def image_generation_handler(callback: types.CallbackQuery, state: FSMCont
 
 
 @router.callback_query(F.data == "image_mode:create")
+@check_user_limit()
 async def image_mode_create_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(ImageGenerationStates.description)
     await state.update_data(mode="create", uploaded_files=[])
@@ -192,6 +196,7 @@ async def image_mode_create_handler(callback: types.CallbackQuery, state: FSMCon
 
 
 @router.callback_query(F.data == "image_mode:edit")
+@check_user_limit()
 async def image_mode_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(ImageGenerationStates.upload_for_edit)
     await state.update_data(mode="edit", uploaded_files=[])
@@ -209,6 +214,7 @@ async def image_mode_edit_handler(callback: types.CallbackQuery, state: FSMConte
 
 
 @router.callback_query(F.data == "image_mode:example")
+@check_user_limit()
 async def image_mode_example_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(ImageGenerationStates.upload_example)
     await state.update_data(mode="example", uploaded_files=[])
@@ -336,6 +342,8 @@ async def edit_prompt_handler(message: types.Message, state: FSMContext):
             caption=f"✅ <b>Готово! Изображение отредактировано.</b>\n\n"
             f"<i>Изменения:</i> {edit_prompt}",
         )
+
+        await track_user_operation(user_id=message.from_user.id)
 
         return await message.answer(
             "Выберите действие:", reply_markup=image_generation_results_keyboard()
@@ -474,6 +482,8 @@ async def example_prompt_handler(message: types.Message, state: FSMContext):
             caption=f"✅ <b>Готово! Изображение создано по примеру.</b>\n\n"
             f"<i>Описание:</i> {example_prompt}",
         )
+
+        await track_user_operation(user_id=message.from_user.id)
 
         return await message.answer(
             "Выберите действие:", reply_markup=image_generation_results_keyboard()
@@ -695,6 +705,7 @@ async def image_result_ok_handler(callback: types.CallbackQuery, state: FSMConte
 
 
 @router.callback_query(F.data == "image_result:regenerate")
+@check_user_limit()
 async def image_result_regenerate_handler(
     callback: types.CallbackQuery, state: FSMContext
 ):
@@ -780,6 +791,8 @@ async def image_result_regenerate_handler(
             photo=BufferedInputFile(image_bytes, filename="regenerated_image.jpg"),
             caption="✅ <b>Новый вариант готов!</b>",
         )
+
+        await track_user_operation(user_id=callback.from_user.id)
 
         return await callback.message.answer(
             "Выберите действие:", reply_markup=image_generation_results_keyboard()

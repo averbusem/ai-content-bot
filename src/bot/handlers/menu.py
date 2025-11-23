@@ -1,6 +1,7 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
+from src.bot.bot_decorators import check_user_limit
 from src.bot.keyboards import (
     main_menu_keyboard,
     back_to_menu_keyboard,
@@ -38,6 +39,7 @@ async def text_generation_handler(callback: types.CallbackQuery, state: FSMConte
 
 
 @router.callback_query(F.data == "main_menu:text_editor")
+@check_user_limit()
 async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.set_state(TextEditorStates.original_text)
@@ -48,6 +50,7 @@ async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "main_menu:content_plan")
+@check_user_limit()
 async def content_plan_start(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(ContentPlanStates.duration_input)
     await callback.answer()
