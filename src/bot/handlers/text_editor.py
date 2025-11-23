@@ -3,7 +3,6 @@ from aiogram.fsm.context import FSMContext
 
 from src.bot.keyboards import (
     back_to_menu_keyboard,
-    text_generation_results_keyboard,
     main_menu_keyboard,
     text_redactor_results_keyboard,
 )
@@ -13,44 +12,41 @@ from src.services.ai_manager import ai_manager
 router = Router()
 
 
-@router.message(TextEditorStates.post_input, F.text)
-async def post_input_handler(message: types.Message, state: FSMContext):
-    user_text = message.text.strip()
-
-    if not user_text:
-        return await message.answer(
-            "Пожалуйста, отправьте текст.", reply_markup=back_to_menu_keyboard()
-        )
-
-    await state.set_state(TextEditorStates.edit_input)
-    await state.update_data(user_text=user_text)
+@router.message(TextEditorStates.original_text, F.text)
+async def original_text_handler(message: types.Message, state: FSMContext):
+    original_text = message.text.strip()
+    await state.set_state(TextEditorStates.edit_request)
+    await state.update_data(original_text=original_text)
 
     return await message.answer(
         "Пришлите идеи по улучшению текста", reply_markup=back_to_menu_keyboard()
     )
 
 
-@router.message(TextEditorStates.edit_input, F.text)
-async def edit_input_handler(message: types.Message, state: FSMContext):
+# Если пользователь отправил НЕ текст
+@router.message(TextEditorStates.original_text)
+async def text_invalid_handler(message: types.Message, state: FSMContext):
+    return await message.answer(
+        "Пожалуйста, отправьте текстовое сообщение с описанием.",
+        reply_markup=back_to_menu_keyboard(),
+    )
+
+
+@router.message(TextEditorStates.edit_request, F.text)
+async def edit_request_handler(message: types.Message, state: FSMContext):
     edit_text = message.text.strip()
-
-    if not edit_text:
-        return await message.answer(
-            "Пожалуйста, отправьте текст.", reply_markup=back_to_menu_keyboard()
-        )
-
     user_id = message.from_user.id
 
     await state.set_state(TextEditorStates.waiting_results)
     await state.update_data(edit_text=edit_text)
     state_data = await state.get_data()
 
-    loading_msg = await message.answer("⏳ Создаю пост...")
+    loading_msg = await message.answer("⏳ Редактирую текст...")
 
     try:
-        post = await ai_manager.edit_post(
+        edited_text, errors, recommendations = await ai_manager.edit_post(
             user_id=user_id,
-            original_post=state_data["user_text"],
+            original_post=state_data["original_text"],
             edit_request=edit_text,
         )
     except Exception as e:
@@ -62,19 +58,39 @@ async def edit_input_handler(message: types.Message, state: FSMContext):
 
     await loading_msg.delete()
 
-    await state.update_data(post=post)
-    await message.answer("✨ <b>Готово! Ваш пост:</b>")
-    await message.answer(f"{post}")
+    # Проверяем, что edited_text не пустой
+    if not edited_text or not edited_text.strip():
+        return await message.answer(
+            "❌ Не удалось получить исправленный текст. Попробуйте еще раз.",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    await state.update_data(post=edited_text)
+
+    # Отправляем исправленный текст
+    await message.answer("✨ <b>Исправленный текст:</b>")
+    await message.answer(f"{edited_text}")
+
+    # Формируем и отправляем аналитику
+    analytics_parts = []
+
+    if errors:
+        errors_text = "🔍 <b>Найденные ошибки:</b>\n"
+        for error in errors:
+            errors_text += f"{error}\n"
+        analytics_parts.append(errors_text)
+
+    if recommendations:
+        recs_text = "💡 <b>Рекомендации по улучшению:</b>\n"
+        for rec in recommendations:
+            recs_text += f"{rec}\n"
+        analytics_parts.append(recs_text)
+
+    if analytics_parts:
+        await message.answer("\n".join(analytics_parts))
+
     return await message.answer(
         "Выберите действие", reply_markup=text_redactor_results_keyboard()
-    )
-
-
-@router.message(TextEditorStates.post_input)
-async def free_text_invalid_handler(message: types.Message, state: FSMContext):
-    return await message.answer(
-        "Пожалуйста, отправьте текстовое сообщение с описанием.",
-        reply_markup=back_to_menu_keyboard(),
     )
 
 
@@ -100,17 +116,9 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 
 @router.message(TextEditorStates.editing, F.text)
 async def editing_handler(message: types.Message, state: FSMContext):
-    edit_request = message.text.strip()
-
-    if not edit_request:
-        return await message.answer(
-            "Пожалуйста, опишите, что нужно изменить.",
-            reply_markup=back_to_menu_keyboard(),
-        )
-
+    edit_text = message.text.strip()
     data = await state.get_data()
-    original_post = data.get("user_text", "")
-
+    original_post = data.get("post", "")
     if not original_post:
         return await message.answer(
             "❌ Не найден исходный пост для редактирования.",
@@ -119,12 +127,12 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
     user_id = message.from_user.id
 
-    loading_msg = await message.answer("⏳ Обновляю пост...")
+    loading_msg = await message.answer("⏳ Редактирую текст...")
 
     try:
         # Используем edit_post для редактирования на основе исходного поста
-        updated_post = await ai_manager.edit_post(
-            user_id=user_id, original_post=original_post, edit_request=edit_request
+        edited_text, errors, recommendations = await ai_manager.edit_post(
+            user_id=user_id, original_post=original_post, edit_request=edit_text
         )
     except Exception as e:
         await loading_msg.delete()
@@ -135,16 +143,42 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
     await loading_msg.delete()
 
-    await state.update_data(post=updated_post)
-    await state.set_state(TextEditorStates.waiting_results)
+    # Проверяем, что edited_text не пустой
+    if not edited_text or not edited_text.strip():
+        return await message.answer(
+            "❌ Не удалось получить исправленный текст. Попробуйте еще раз.",
+            reply_markup=back_to_menu_keyboard(),
+        )
 
-    await message.answer("✨ <b>Пост обновлён:</b>")
-    await message.answer(f"{updated_post}")
+    await state.update_data(post=edited_text)
+
+    await message.answer("✨ <b>Исправленный текст:</b>")
+    await message.answer(f"{edited_text}")
+
+    # Формируем и отправляем аналитику
+    analytics_parts = []
+
+    if errors:
+        errors_text = "🔍 <b>Найденные ошибки:</b>\n"
+        for error in errors:
+            errors_text += f"{error}\n"
+        analytics_parts.append(errors_text)
+
+    if recommendations:
+        recs_text = "💡 <b>Рекомендации по улучшению:</b>\n"
+        for rec in recommendations:
+            recs_text += f"{rec}\n"
+        analytics_parts.append(recs_text)
+
+    if analytics_parts:
+        await message.answer("\n".join(analytics_parts))
+
     return await message.answer(
-        "Выберите действие", reply_markup=text_generation_results_keyboard()
+        "Выберите действие", reply_markup=text_redactor_results_keyboard()
     )
 
 
+# Если пользователь отправил НЕ текст
 @router.message(TextEditorStates.editing)
 async def editing_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(
