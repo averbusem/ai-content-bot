@@ -1,5 +1,6 @@
 import logging
 from aiogram import types, Router, F
+from aiogram.filters import StateFilter
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
@@ -11,12 +12,153 @@ from src.bot.keyboards import (
     image_generation_results_keyboard,
     main_menu_keyboard,
     image_mode_keyboard,
+    overlay_mode_keyboard,
+    overlay_position_keyboard,
+    overlay_background_keyboard,
+    overlay_font_keyboard
 )
 from src.bot.states import ImageGenerationStates, MainMenuStates
+from src.services.text_overlay import TextOverlayConfig
 from src.services.ai_manager import ai_manager
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+
+def _get_font_options(limit: int = 3) -> list[str]:
+    service = ai_manager.image_generator.text_overlay
+    if not service:
+        return ["random"]
+
+    fonts = [font for font in service.list_fonts() if font and font != "default"]
+    if not fonts:
+        fonts = []
+
+    fonts = fonts[:limit]
+    if "random" not in fonts:
+        fonts.append("random")
+    return fonts
+
+
+def _build_overlay_config(position: str | None, background: str | None) -> TextOverlayConfig | None:
+    if not position and (not background or background == "auto"):
+        return None
+
+    config = TextOverlayConfig()
+
+    if position and position != "auto":
+        config.position = position
+
+    if background:
+        if background == "dark":
+            config.background_color = (0, 0, 0, 210)
+            config.text_color = (255, 255, 255, 255)
+        elif background == "light":
+            config.background_color = (255, 255, 255, 235)
+            config.text_color = (20, 20, 20, 255)
+        elif background == "transparent":
+            config.background_color = (0, 0, 0, 0)
+            config.text_color = (255, 255, 255, 255)
+
+    return config
+
+
+async def _start_manual_image_generation(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    description = data.get("description", "")
+    style = data.get("style", "")
+    colors = data.get("colors", "")
+    style_name = data.get("style_name", "")
+    colors_name = data.get("colors_name", "")
+
+    if not description:
+        await callback.answer()
+        return await callback.message.edit_text(
+            "❌ Ошибка: не указано описание изображения. Пожалуйста, начните заново.",
+            reply_markup=back_to_menu_keyboard()
+        )
+
+    loading_msg = await callback.message.edit_text(
+        "⏳ Создаю изображение...\n\n"
+        f"<b>Описание:</b> {description}\n"
+        f"<b>Стиль:</b> {style_name or style}\n"
+        f"<b>Цвета:</b> {colors_name or colors}"
+    )
+
+    await state.set_state(ImageGenerationStates.waiting_results)
+
+    try:
+        style_prompts = {
+            "realistic": "реалистичная фотография, высокая детализация",
+            "illustration": "художественная иллюстрация, рисунок",
+            "minimalism": "минималистичный стиль, простота, чистые линии",
+            "poster": "стиль постера или афиши, яркий, привлекающий внимание",
+            "business": "деловой стиль, профессиональный вид"
+        }
+
+        color_prompts = {
+            "warm": "тёплые цвета (красный, оранжевый, жёлтый)",
+            "cold": "холодные цвета (синий, голубой, зелёный)",
+            "bright": "яркие и контрастные цвета",
+            "neutral": "нейтральные и пастельные тона",
+            "auto": ""
+        }
+
+        style_desc = style_prompts.get(style, "")
+        color_desc = color_prompts.get(colors, "")
+
+        full_prompt = f"{description}. {style_desc}"
+        if color_desc:
+            full_prompt += f". {color_desc}"
+
+        overlay_text = data.get("overlay_text")
+        overlay_font = data.get("overlay_font")
+        overlay_position = data.get("overlay_position")
+        overlay_background = data.get("overlay_background")
+        overlay_config = _build_overlay_config(overlay_position, overlay_background)
+
+        image_bytes = await ai_manager.generate_image(
+            prompt=full_prompt,
+            width=1024,
+            height=1024,
+            overlay_text=overlay_text,
+            overlay_font=overlay_font,
+            overlay_config=overlay_config
+        )
+
+        try:
+            await loading_msg.delete()
+        except Exception:
+            pass
+
+        await state.update_data(
+            last_prompt=full_prompt,
+            last_overlay_text=overlay_text,
+            last_overlay_font=overlay_font,
+            last_overlay_position=overlay_position,
+            last_overlay_background=overlay_background
+        )
+
+        await callback.message.answer_photo(
+            photo=BufferedInputFile(image_bytes, filename="generated_image.jpg"),
+            caption="✅ <b>Готово! Вот ваше изображение.</b>"
+        )
+
+        return await callback.message.answer(
+            "Выберите действие:",
+            reply_markup=image_generation_results_keyboard()
+        )
+
+    except Exception:
+        try:
+            await loading_msg.delete()
+        except Exception:
+            pass
+        return await callback.message.answer(
+            "❌ Произошла ошибка при генерации изображения\n\n"
+            "Попробуйте ещё раз или вернитесь в главное меню.",
+            reply_markup=back_to_menu_keyboard()
+        )
 
 
 @router.callback_query(F.data == "main_menu:image_generation")
@@ -422,84 +564,106 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
     }
 
     await state.update_data(colors=colors, colors_name=color_names.get(colors, colors))
+    await state.set_state(ImageGenerationStates.overlay_mode)
     await callback.answer()
 
-    data = await state.get_data()
-    description = data.get("description", "")
-    style = data.get("style", "")
-    style_name = data.get("style_name", "")
-    colors_name = data.get("colors_name", "")
-
-    if not description:
-        return await callback.message.edit_text(
-            "❌ Ошибка: не указано описание изображения. Пожалуйста, начните заново.",
-            reply_markup=back_to_menu_keyboard(),
-        )
-
-    # Показываем сообщение о создании
-    loading_msg = await callback.message.edit_text(
-        "⏳ Создаю изображение...\n\n"
-        f"<b>Описание:</b> {description}\n"
-        f"<b>Стиль:</b> {style_name}\n"
-        f"<b>Цвета:</b> {colors_name}"
+    return await callback.message.edit_text(
+        "📝 <b>Хотите добавить текст на изображение?</b>\n\n"
+        "Вы можете указать короткую фразу (для афиши, слогана или даты) и выбрать, где она появится.",
+        reply_markup=overlay_mode_keyboard()
     )
 
-    await state.set_state(ImageGenerationStates.waiting_results)
 
-    try:
-        style_prompts = {
-            "realistic": "реалистичная фотография, высокая детализация",
-            "illustration": "художественная иллюстрация, рисунок",
-            "minimalism": "минималистичный стиль, простота, чистые линии",
-            "poster": "стиль постера или афиши, яркий, привлекающий внимание",
-            "business": "деловой стиль, профессиональный вид",
-        }
+@router.callback_query(ImageGenerationStates.overlay_mode, F.data.startswith("overlay_mode:"))
+async def image_overlay_mode_handler(callback: types.CallbackQuery, state: FSMContext):
+    mode = callback.data.split(":")[1]
+    await callback.answer()
 
-        color_prompts = {
-            "warm": "тёплые цвета (красный, оранжевый, жёлтый)",
-            "cold": "холодные цвета (синий, голубой, зелёный)",
-            "bright": "яркие и контрастные цвета",
-            "neutral": "нейтральные и пастельные тона",
-            "auto": "",
-        }
+    if mode == "none":
+        await state.update_data(
+            overlay_mode="none",
+            overlay_text=None,
+            overlay_position=None,
+            overlay_background=None,
+            overlay_font=None
+        )
+        return await _start_manual_image_generation(callback, state)
 
-        style_desc = style_prompts.get(style, "")
-        color_desc = color_prompts.get(colors, "")
+    await state.update_data(overlay_mode="custom")
+    await state.set_state(ImageGenerationStates.overlay_text)
 
-        full_prompt = f"{description}. {style_desc}"
-        if color_desc:
-            full_prompt += f". {color_desc}"
+    return await callback.message.edit_text(
+        "✍️ <b>Введите фразу</b>\n\n"
+        "Например: «Участники — молодцы», «15 декабря 18:00», «Энергия добра».\n"
+        "Фраза должна быть короткой и читаемой.",
+        reply_markup=back_to_menu_keyboard()
+    )
 
-        image_bytes = await ai_manager.generate_image(
-            prompt=full_prompt, width=1024, height=1024
+
+@router.message(StateFilter(ImageGenerationStates.overlay_text), F.text)
+async def image_overlay_text_handler(message: types.Message, state: FSMContext):
+    text_value = message.text.strip()
+
+    if not text_value:
+        return await message.answer(
+            "Пожалуйста, отправьте текст для подписи.",
+            reply_markup=back_to_menu_keyboard()
         )
 
-        try:
-            await loading_msg.delete()
-        except Exception:
-            pass
+    await state.update_data(overlay_text=text_value)
+    await state.set_state(ImageGenerationStates.overlay_position)
 
-        await state.update_data(last_prompt=full_prompt)
+    return await message.answer(
+        "📍 <b>Где разместить текст?</b>",
+        reply_markup=overlay_position_keyboard()
+    )
 
-        await callback.message.answer_photo(
-            photo=BufferedInputFile(image_bytes, filename="generated_image.jpg"),
-            caption="✅ <b>Готово! Вот ваше изображение.</b>",
-        )
 
-        return await callback.message.answer(
-            "Выберите действие:", reply_markup=image_generation_results_keyboard()
-        )
+@router.message(StateFilter(ImageGenerationStates.overlay_text))
+async def image_overlay_text_invalid(message: types.Message):
+    return await message.answer(
+        "Пожалуйста, отправьте текстовую подпись.",
+        reply_markup=back_to_menu_keyboard()
+    )
 
-    except Exception:
-        try:
-            await loading_msg.delete()
-        except Exception:
-            pass
-        return await callback.message.answer(
-            "❌ Произошла ошибка при генерации изображения\n\n"
-            "Попробуйте ещё раз или вернитесь в главное меню.",
-            reply_markup=back_to_menu_keyboard(),
-        )
+
+@router.callback_query(StateFilter(ImageGenerationStates.overlay_position), F.data.startswith("overlay_position:"))
+async def image_overlay_position_handler(callback: types.CallbackQuery, state: FSMContext):
+    position = callback.data.split(":")[1]
+    await callback.answer()
+
+    await state.update_data(overlay_position=None if position == "auto" else position)
+    await state.set_state(ImageGenerationStates.overlay_background)
+
+    return await callback.message.edit_text(
+        "🎨 <b>Выберите фон для текста</b>",
+        reply_markup=overlay_background_keyboard()
+    )
+
+
+@router.callback_query(StateFilter(ImageGenerationStates.overlay_background), F.data.startswith("overlay_bg:"))
+async def image_overlay_background_handler(callback: types.CallbackQuery, state: FSMContext):
+    background = callback.data.split(":")[1]
+    await callback.answer()
+
+    await state.update_data(overlay_background=None if background == "auto" else background)
+    await state.set_state(ImageGenerationStates.overlay_font)
+
+    font_options = _get_font_options()
+
+    return await callback.message.edit_text(
+        "🔠 <b>Выберите стиль шрифта</b>",
+        reply_markup=overlay_font_keyboard(font_options)
+    )
+
+
+@router.callback_query(StateFilter(ImageGenerationStates.overlay_font), F.data.startswith("overlay_font:"))
+async def image_overlay_font_handler(callback: types.CallbackQuery, state: FSMContext):
+    font_value = callback.data.split(":")[1]
+    await callback.answer()
+
+    await state.update_data(overlay_font=None if font_value == "random" else font_value)
+    return await _start_manual_image_generation(callback, state)
 
 
 # ============================================================================
@@ -582,8 +746,19 @@ async def image_result_regenerate_handler(
                     reply_markup=image_generation_results_keyboard(),
                 )
 
+            overlay_text = data.get("last_overlay_text")
+            overlay_font = data.get("last_overlay_font")
+            overlay_position = data.get("last_overlay_position")
+            overlay_background = data.get("last_overlay_background")
+            overlay_config = _build_overlay_config(overlay_position, overlay_background)
+
             image_bytes = await ai_manager.generate_image(
-                prompt=last_prompt, width=1024, height=1024
+                prompt=last_prompt,
+                width=1024,
+                height=1024,
+                overlay_text=overlay_text,
+                overlay_font=overlay_font,
+                overlay_config=overlay_config
             )
 
         await loading_msg.delete()

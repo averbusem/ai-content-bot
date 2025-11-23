@@ -124,12 +124,6 @@ class AIManager:
             original_post=original_post, edit_request=edit_request
         )
 
-    # async def edit_text(
-    #     self, text: str, edit_focus: str = "все аспекты"
-    # ) -> Dict[str, Any]:
-    #     """Редактирование текста"""
-    #     return await self.content_generator.edit_text(text=text, edit_focus=edit_focus)
-
     async def generate_content_plan(
         self,
         user_id: int,
