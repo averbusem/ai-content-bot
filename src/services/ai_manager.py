@@ -4,6 +4,7 @@ from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
 from .image_generator import ImageGenerator
 from .nko_service import nko_service
+from .text_overlay import TextOverlayConfig, TextOverlayService
 
 
 class AIManager:
@@ -11,7 +12,10 @@ class AIManager:
         self.gigachat = GigaChatModel()
         self.salute_speech = SaluteSpeechModel()
         self.content_generator = ContentGenerator(self.gigachat)
-        self.image_generator = ImageGenerator(self.gigachat)
+        text_overlay_service = TextOverlayService()
+        self.image_generator = ImageGenerator(
+            self.gigachat, text_overlay_service=text_overlay_service
+        )
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
 
@@ -147,7 +151,13 @@ class AIManager:
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ИЗОБРАЖЕНИЯМИ ===
 
     async def generate_image(
-        self, prompt: str, width: int = 1024, height: int = 1024
+        self,
+        prompt: str,
+        width: int = 1024,
+        height: int = 1024,
+        overlay_text: Optional[str] = None,
+        overlay_font: Optional[str] = None,
+        overlay_config: Optional[TextOverlayConfig] = None,
     ) -> bytes:
         """
         Генерация изображения
@@ -161,24 +171,12 @@ class AIManager:
             Байты изображения
         """
         return await self.image_generator.generate_image(
-            prompt=prompt, width=width, height=height
-        )
-
-    async def generate_image_from_params(
-        self,
-        description: str,
-        style: str,
-        colors: str,
-        width: int = 1024,
-        height: int = 1024,
-    ) -> bytes:
-        """Генерация изображения на основе параметров пользователя"""
-        return await self.image_generator.generate_image_from_params(
-            description=description,
-            style=style,
-            colors=colors,
+            prompt=prompt,
             width=width,
             height=height,
+            overlay_text=overlay_text,
+            overlay_font=overlay_font,
+            overlay_config=overlay_config,
         )
 
     async def generate_image_from_post(
@@ -187,6 +185,10 @@ class AIManager:
         image_description: Optional[str] = None,
         width: int = 1024,
         height: int = 1024,
+        include_info_block: bool = False,
+        prepared_info_text: Optional[str] = None,
+        overlay_font: Optional[str] = None,
+        overlay_config: Optional[TextOverlayConfig] = None,
     ) -> bytes:
         """Генерация изображения на основе текста поста"""
         return await self.image_generator.generate_image_from_post(
@@ -194,6 +196,10 @@ class AIManager:
             image_description=image_description,
             width=width,
             height=height,
+            include_info_block=include_info_block,
+            prepared_info_text=prepared_info_text,
+            overlay_font=overlay_font,
+            overlay_config=overlay_config,
         )
 
     async def edit_image(

@@ -174,10 +174,10 @@ async def text_result_change_image_handler(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         await callback.message.answer(
-            f"❌ Ошибка при создании изображения: {str(e)}",
+            "❌ Ошибка при создании изображения. Пожалуйста, попробуйте ещё раз позже",
             reply_markup=text_generation_results_keyboard(),
         )
 
@@ -237,10 +237,10 @@ async def editing_handler(message: types.Message, state: FSMContext):
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при обновлении поста: {str(e)}",
+            "❌ Произошла ошибка при обновлении поста. Попробуйте ещё раз позже",
             reply_markup=back_to_menu_keyboard(),
         )
 

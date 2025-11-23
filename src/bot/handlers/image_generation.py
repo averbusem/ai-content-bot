@@ -1,6 +1,5 @@
 import logging
 from aiogram import types, Router, F
-from aiogram.filters import StateFilter
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
@@ -15,7 +14,7 @@ from src.bot.keyboards import (
     overlay_mode_keyboard,
     overlay_position_keyboard,
     overlay_background_keyboard,
-    overlay_font_keyboard
+    overlay_font_keyboard,
 )
 from src.bot.states import ImageGenerationStates, MainMenuStates
 from src.services.text_overlay import TextOverlayConfig
@@ -40,7 +39,9 @@ def _get_font_options(limit: int = 3) -> list[str]:
     return fonts
 
 
-def _build_overlay_config(position: str | None, background: str | None) -> TextOverlayConfig | None:
+def _build_overlay_config(
+    position: str | None, background: str | None
+) -> TextOverlayConfig | None:
     if not position and (not background or background == "auto"):
         return None
 
@@ -63,7 +64,9 @@ def _build_overlay_config(position: str | None, background: str | None) -> TextO
     return config
 
 
-async def _start_manual_image_generation(callback: types.CallbackQuery, state: FSMContext):
+async def _start_manual_image_generation(
+    callback: types.CallbackQuery, state: FSMContext
+):
     data = await state.get_data()
     description = data.get("description", "")
     style = data.get("style", "")
@@ -75,7 +78,7 @@ async def _start_manual_image_generation(callback: types.CallbackQuery, state: F
         await callback.answer()
         return await callback.message.edit_text(
             "❌ Ошибка: не указано описание изображения. Пожалуйста, начните заново.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     loading_msg = await callback.message.edit_text(
@@ -93,7 +96,7 @@ async def _start_manual_image_generation(callback: types.CallbackQuery, state: F
             "illustration": "художественная иллюстрация, рисунок",
             "minimalism": "минималистичный стиль, простота, чистые линии",
             "poster": "стиль постера или афиши, яркий, привлекающий внимание",
-            "business": "деловой стиль, профессиональный вид"
+            "business": "деловой стиль, профессиональный вид",
         }
 
         color_prompts = {
@@ -101,7 +104,7 @@ async def _start_manual_image_generation(callback: types.CallbackQuery, state: F
             "cold": "холодные цвета (синий, голубой, зелёный)",
             "bright": "яркие и контрастные цвета",
             "neutral": "нейтральные и пастельные тона",
-            "auto": ""
+            "auto": "",
         }
 
         style_desc = style_prompts.get(style, "")
@@ -123,7 +126,7 @@ async def _start_manual_image_generation(callback: types.CallbackQuery, state: F
             height=1024,
             overlay_text=overlay_text,
             overlay_font=overlay_font,
-            overlay_config=overlay_config
+            overlay_config=overlay_config,
         )
 
         try:
@@ -136,17 +139,16 @@ async def _start_manual_image_generation(callback: types.CallbackQuery, state: F
             last_overlay_text=overlay_text,
             last_overlay_font=overlay_font,
             last_overlay_position=overlay_position,
-            last_overlay_background=overlay_background
+            last_overlay_background=overlay_background,
         )
 
         await callback.message.answer_photo(
             photo=BufferedInputFile(image_bytes, filename="generated_image.jpg"),
-            caption="✅ <b>Готово! Вот ваше изображение.</b>"
+            caption="✅ <b>Готово! Вот ваше изображение.</b>",
         )
 
         return await callback.message.answer(
-            "Выберите действие:",
-            reply_markup=image_generation_results_keyboard()
+            "Выберите действие:", reply_markup=image_generation_results_keyboard()
         )
 
     except Exception:
@@ -157,7 +159,7 @@ async def _start_manual_image_generation(callback: types.CallbackQuery, state: F
         return await callback.message.answer(
             "❌ Произошла ошибка при генерации изображения\n\n"
             "Попробуйте ещё раз или вернитесь в главное меню.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -570,11 +572,13 @@ async def image_colors_handler(callback: types.CallbackQuery, state: FSMContext)
     return await callback.message.edit_text(
         "📝 <b>Хотите добавить текст на изображение?</b>\n\n"
         "Вы можете указать короткую фразу (для афиши, слогана или даты) и выбрать, где она появится.",
-        reply_markup=overlay_mode_keyboard()
+        reply_markup=overlay_mode_keyboard(),
     )
 
 
-@router.callback_query(ImageGenerationStates.overlay_mode, F.data.startswith("overlay_mode:"))
+@router.callback_query(
+    ImageGenerationStates.overlay_mode, F.data.startswith("overlay_mode:")
+)
 async def image_overlay_mode_handler(callback: types.CallbackQuery, state: FSMContext):
     mode = callback.data.split(":")[1]
     await callback.answer()
@@ -585,7 +589,7 @@ async def image_overlay_mode_handler(callback: types.CallbackQuery, state: FSMCo
             overlay_text=None,
             overlay_position=None,
             overlay_background=None,
-            overlay_font=None
+            overlay_font=None,
         )
         return await _start_manual_image_generation(callback, state)
 
@@ -596,39 +600,41 @@ async def image_overlay_mode_handler(callback: types.CallbackQuery, state: FSMCo
         "✍️ <b>Введите фразу</b>\n\n"
         "Например: «Участники — молодцы», «15 декабря 18:00», «Энергия добра».\n"
         "Фраза должна быть короткой и читаемой.",
-        reply_markup=back_to_menu_keyboard()
+        reply_markup=back_to_menu_keyboard(),
     )
 
 
-@router.message(StateFilter(ImageGenerationStates.overlay_text), F.text)
+@router.message(ImageGenerationStates.overlay_text, F.text)
 async def image_overlay_text_handler(message: types.Message, state: FSMContext):
     text_value = message.text.strip()
 
     if not text_value:
         return await message.answer(
             "Пожалуйста, отправьте текст для подписи.",
-            reply_markup=back_to_menu_keyboard()
+            reply_markup=back_to_menu_keyboard(),
         )
 
     await state.update_data(overlay_text=text_value)
     await state.set_state(ImageGenerationStates.overlay_position)
 
     return await message.answer(
-        "📍 <b>Где разместить текст?</b>",
-        reply_markup=overlay_position_keyboard()
+        "📍 <b>Где разместить текст?</b>", reply_markup=overlay_position_keyboard()
     )
 
 
-@router.message(StateFilter(ImageGenerationStates.overlay_text))
+@router.message(ImageGenerationStates.overlay_text)
 async def image_overlay_text_invalid(message: types.Message):
     return await message.answer(
-        "Пожалуйста, отправьте текстовую подпись.",
-        reply_markup=back_to_menu_keyboard()
+        "Пожалуйста, отправьте текстовую подпись.", reply_markup=back_to_menu_keyboard()
     )
 
 
-@router.callback_query(StateFilter(ImageGenerationStates.overlay_position), F.data.startswith("overlay_position:"))
-async def image_overlay_position_handler(callback: types.CallbackQuery, state: FSMContext):
+@router.callback_query(
+    ImageGenerationStates.overlay_position, F.data.startswith("overlay_position:")
+)
+async def image_overlay_position_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
     position = callback.data.split(":")[1]
     await callback.answer()
 
@@ -636,28 +642,35 @@ async def image_overlay_position_handler(callback: types.CallbackQuery, state: F
     await state.set_state(ImageGenerationStates.overlay_background)
 
     return await callback.message.edit_text(
-        "🎨 <b>Выберите фон для текста</b>",
-        reply_markup=overlay_background_keyboard()
+        "🎨 <b>Выберите фон для текста</b>", reply_markup=overlay_background_keyboard()
     )
 
 
-@router.callback_query(StateFilter(ImageGenerationStates.overlay_background), F.data.startswith("overlay_bg:"))
-async def image_overlay_background_handler(callback: types.CallbackQuery, state: FSMContext):
+@router.callback_query(
+    ImageGenerationStates.overlay_background, F.data.startswith("overlay_bg:")
+)
+async def image_overlay_background_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
     background = callback.data.split(":")[1]
     await callback.answer()
 
-    await state.update_data(overlay_background=None if background == "auto" else background)
+    await state.update_data(
+        overlay_background=None if background == "auto" else background
+    )
     await state.set_state(ImageGenerationStates.overlay_font)
 
     font_options = _get_font_options()
 
     return await callback.message.edit_text(
         "🔠 <b>Выберите стиль шрифта</b>",
-        reply_markup=overlay_font_keyboard(font_options)
+        reply_markup=overlay_font_keyboard(font_options),
     )
 
 
-@router.callback_query(StateFilter(ImageGenerationStates.overlay_font), F.data.startswith("overlay_font:"))
+@router.callback_query(
+    ImageGenerationStates.overlay_font, F.data.startswith("overlay_font:")
+)
 async def image_overlay_font_handler(callback: types.CallbackQuery, state: FSMContext):
     font_value = callback.data.split(":")[1]
     await callback.answer()
@@ -758,7 +771,7 @@ async def image_result_regenerate_handler(
                 height=1024,
                 overlay_text=overlay_text,
                 overlay_font=overlay_font,
-                overlay_config=overlay_config
+                overlay_config=overlay_config,
             )
 
         await loading_msg.delete()
