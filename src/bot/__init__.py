@@ -9,7 +9,10 @@ from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BotCommand
 
 from src.bot.handlers import get_handlers_router
-from src.bot.middlewares import RemoveLastKeyboardMiddleware
+from src.bot.middlewares import (
+    RemoveLastKeyboardMiddleware,
+    GroupChatAccessMiddleware,
+)
 from src.config import settings
 from src.services.rate_limiter import rate_limiter
 
@@ -22,6 +25,8 @@ bot = Bot(
 storage = RedisStorage.from_url(settings.REDIS_URL)
 dp = Dispatcher(storage=storage)
 
+dp.message.middleware(GroupChatAccessMiddleware(storage=storage))
+dp.callback_query.middleware(GroupChatAccessMiddleware(storage=storage))
 dp.message.middleware(RemoveLastKeyboardMiddleware())
 dp.callback_query.middleware(RemoveLastKeyboardMiddleware())
 
