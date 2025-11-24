@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     USER_OPERATIONS_LIMIT: int = int(1)
     USER_OPERATIONS_WINDOW: int = int(360)
 
+    # Inactivity timeout for groups
+    INACTIVITY_TIMEOUT: int = int(15)
+
     # Rate Limiter
     MAX_RETRIES: int = int(3)
     RETRY_MIN_WAIT: int = int(1)
