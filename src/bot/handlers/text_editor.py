@@ -8,6 +8,7 @@ from src.bot.keyboards import (
 )
 from src.bot.states import TextEditorStates, MainMenuStates
 from src.services.ai_manager import ai_manager
+from src.bot.bot_decorators import check_user_limit, track_user_operation
 
 router = Router()
 
@@ -49,10 +50,10 @@ async def edit_request_handler(message: types.Message, state: FSMContext):
             original_post=state_data["original_text"],
             edit_request=edit_text,
         )
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при создании поста: {str(e)}",
+            "❌ Произошла ошибка при создании поста. Попробуйте ещё раз позже",
             reply_markup=back_to_menu_keyboard(),
         )
 
@@ -70,6 +71,8 @@ async def edit_request_handler(message: types.Message, state: FSMContext):
     # Отправляем исправленный текст
     await message.answer("✨ <b>Исправленный текст:</b>")
     await message.answer(f"{edited_text}")
+
+    await track_user_operation(user_id)
 
     # Формируем и отправляем аналитику
     analytics_parts = []
@@ -104,6 +107,7 @@ async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContex
 
 
 @router.callback_query(F.data == "text_editor:edit")
+@check_user_limit()
 async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextEditorStates.editing)
     await callback.answer()
@@ -134,10 +138,10 @@ async def editing_handler(message: types.Message, state: FSMContext):
         edited_text, errors, recommendations = await ai_manager.edit_post(
             user_id=user_id, original_post=original_post, edit_request=edit_text
         )
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка при обновлении поста: {str(e)}",
+            "❌ Произошла ошибка при обновлении поста. Попробуйте ещё раз позже",
             reply_markup=back_to_menu_keyboard(),
         )
 
@@ -154,6 +158,8 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
     await message.answer("✨ <b>Исправленный текст:</b>")
     await message.answer(f"{edited_text}")
+
+    await track_user_operation(user_id)
 
     # Формируем и отправляем аналитику
     analytics_parts = []

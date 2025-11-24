@@ -1,6 +1,7 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
+from src.bot.bot_decorators import track_user_operation
 from src.bot.keyboards import back_to_menu_keyboard, main_menu_keyboard
 from src.services.ai_manager import ai_manager
 from src.bot.states import ContentPlanStates
@@ -145,17 +146,18 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
         await message.answer(f"<b>📋 КОНТЕНТ-ПЛАН:</b>\n\n{plan}")
 
         await state.clear()
+
+        await track_user_operation(user_id)
         return await message.answer(
             "✅ Контент-план создан!\n\nВы можете сохранить его или создать новый.",
             reply_markup=main_menu_keyboard(),
         )
 
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         await state.clear()
         return await message.answer(
-            f"❌ Произошла ошибка при создании контент-плана:\n"
-            f"{str(e)}\n\n"
+            "❌ Произошла ошибка при создании контент-плана:\n"
             "Попробуйте ещё раз позже.",
             reply_markup=main_menu_keyboard(),
         )

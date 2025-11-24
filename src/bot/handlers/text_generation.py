@@ -2,6 +2,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 
+from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
     back_to_menu_keyboard,
     text_generation_results_keyboard,
@@ -14,6 +15,7 @@ router = Router()
 
 
 @router.callback_query(F.data == "text_gen:free_text")
+@check_user_limit()
 async def free_text_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextGenerationStates.free_text_input)
     await callback.answer()
@@ -54,21 +56,21 @@ async def generate_post_with_image(
         await state.update_data(post=post, has_image=True)
 
         await message.answer("✨ <b>Готово! Ваш пост:</b>")
-        await message.answer(f"{post}")
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await message.answer_photo(
-            photo=image_file, caption="🖼 Изображение для вашего поста"
-        )
+        await message.answer_photo(photo=image_file, caption=post)
+
+        await track_user_operation(user_id)
 
         return await message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
-    except Exception as e:
+    except Exception:
         await loading_msg.delete()
         return await message.answer(
-            f"❌ Произошла ошибка: {str(e)}", reply_markup=back_to_menu_keyboard()
+            "❌ Произошла ошибка. Попробуйте ещё раз позже",
+            reply_markup=back_to_menu_keyboard(),
         )
 
 
@@ -120,10 +122,10 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
             message, state, user_id, user_text.strip()
         )
 
-    except Exception as e:
+    except Exception:
         await transcribe_msg.delete()
         return await message.answer(
-            f"❌ Ошибка при распознавании речи: {str(e)}",
+            "❌ Ошибка при распознавании речи. Попробуйте ещё раз позже",
             reply_markup=back_to_menu_keyboard(),
         )
 
@@ -147,6 +149,7 @@ async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContex
 
 
 @router.callback_query(F.data == "text_result:change_image")
+@check_user_limit()
 async def text_result_change_image_handler(
     callback: types.CallbackQuery, state: FSMContext
 ):
@@ -170,7 +173,9 @@ async def text_result_change_image_handler(
             photo=image_file, caption="🖼 Новое изображение для вашего поста"
         )
 
-        await callback.message.answer(
+        await track_user_operation(user_id=callback.from_user.id)
+
+        return await callback.message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )
 
@@ -183,6 +188,7 @@ async def text_result_change_image_handler(
 
 
 @router.callback_query(F.data == "text_result:edit")
+@check_user_limit()
 async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(TextGenerationStates.editing)
     await callback.answer()
@@ -226,13 +232,11 @@ async def editing_handler(message: types.Message, state: FSMContext):
         await state.set_state(TextGenerationStates.waiting_results)
 
         await message.answer("✨ <b>Пост обновлён:</b>")
-        await message.answer(f"{updated_post}")
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await message.answer_photo(
-            photo=image_file, caption="🖼 Обновлённое изображение для поста"
-        )
+        await message.answer_photo(photo=image_file, caption=updated_post)
 
+        await track_user_operation(user_id=user_id)
         return await message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
         )

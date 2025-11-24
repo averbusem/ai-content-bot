@@ -501,7 +501,6 @@ class ContentGenerator:
         raw_response = await self.model.generate_text(
             prompt=prompt, system_prompt=system_prompt, temperature=0.0
         )
-        print(raw_response)
         return self._parse_edit_response(raw_response)
 
     async def generate_content_plan(

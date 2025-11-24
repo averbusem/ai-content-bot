@@ -1,8 +1,14 @@
+import logging
+import ssl
 import httpx
 import base64
 import uuid
+from pathlib import Path
 from typing import Optional, List, Dict
 from src.config import settings
+from src.services.service_decorators import with_retry
+
+logger = logging.getLogger(__name__)
 
 
 class GigaChatModel:
@@ -16,8 +22,34 @@ class GigaChatModel:
         self.token_expires_at: float = 0
         self.conversation_history: List[Dict[str, str]] = []
 
+        project_root = Path(__file__).parent.parent
+        self.cert_path = (
+            project_root / "certificates" / "russian_trusted_root_ca_pem.crt"
+        )
+
+        self.ssl_context = self._create_ssl_context()
+
+    def _create_ssl_context(self) -> Optional[ssl.SSLContext]:
+        """Создание SSL контекста с русскими сертификатами"""
+        if not self.cert_path.exists():
+            return None
+
+        try:
+            ssl_context = ssl.create_default_context()
+            ssl_context.load_verify_locations(cafile=str(self.cert_path))
+            return ssl_context
+        except Exception:
+            return None
+
+    def _get_httpx_client_kwargs(self) -> dict:
+        if self.ssl_context:
+            return {"verify": self.ssl_context}
+        else:
+            return {"verify": False}
+
+    @with_retry
     async def _get_auth_token(self) -> str:
-        """Получение токена авторизации"""
+        """Получение токена авторизации с retry"""
         auth_string = f"{settings.GIGACHAT_CLIENT_ID}:{settings.GIGACHAT_CLIENT_SECRET}"
         auth_encoded = base64.b64encode(auth_string.encode()).decode()
 
@@ -30,7 +62,7 @@ class GigaChatModel:
         data = {"scope": settings.GIGACHAT_SCOPE}
 
         try:
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(**self._get_httpx_client_kwargs()) as client:
                 response = await client.post(
                     self.AUTH_URL, headers=headers, data=data, timeout=30.0
                 )
@@ -41,12 +73,15 @@ class GigaChatModel:
             error_detail = ""
             try:
                 error_detail = e.response.json()
+                logger.error(error_detail)
             except ValueError:
                 error_detail = e.response.text
+                logger.error(error_detail)
             raise Exception(
                 f"Ошибка авторизации GigaChat: HTTP {e.response.status_code}: {error_detail}"
             )
         except Exception as e:
+            logger.error(e)
             raise Exception(f"Ошибка получения токена GigaChat: {str(e)}")
 
     async def _ensure_token(self):
@@ -57,19 +92,19 @@ class GigaChatModel:
             self.access_token = await self._get_auth_token()
             self.token_expires_at = time.time() + (30 * 60)
 
+    @with_retry
     async def analyze_image(
-            self,
-            image_data: bytes,
-            prompt: str = f"Максимально подробно опиши это изображение, чтобы не упустить все детали на нём"
+        self,
+        image_data: bytes,
+        prompt: str = "Максимально подробно опиши это изображение, чтобы не упустить все детали на нём",
     ) -> str:
         await self._ensure_token()
 
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(**self._get_httpx_client_kwargs()) as client:
             try:
                 files = {"file": ("image.jpg", image_data, "image/jpeg")}
-
                 data = {"purpose": "general"}
 
                 upload_response = await client.post(
@@ -145,6 +180,7 @@ class GigaChatModel:
                     f"Ошибка анализа изображения: HTTP {e.response.status_code}: {error_detail}"
                 )
 
+    @with_retry
     async def generate_text(
         self,
         prompt: str,
@@ -191,7 +227,7 @@ class GigaChatModel:
             "repetition_penalty": 1.1,
         }
 
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(**self._get_httpx_client_kwargs()) as client:
             try:
                 response = await client.post(
                     f"{self.BASE_URL}/chat/completions",
@@ -238,6 +274,7 @@ class GigaChatModel:
                     error_detail = e.response.text
                 raise Exception(f"HTTP {e.response.status_code}: {error_detail}")
 
+    @with_retry
     async def generate_image(
         self,
         prompt: str,
@@ -279,7 +316,7 @@ class GigaChatModel:
             "height": height,
         }
 
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(**self._get_httpx_client_kwargs()) as client:
             try:
                 response = await client.post(
                     f"{self.BASE_URL}/chat/completions",
