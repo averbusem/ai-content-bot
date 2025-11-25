@@ -20,7 +20,6 @@ class User(Base):
 
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     username: Mapped[Optional[str]] = mapped_column(String(64), unique=True)
-    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Админ может поставить False, тогда бот будет недоступен
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

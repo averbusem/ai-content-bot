@@ -9,7 +9,11 @@ from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BotCommand
 
 from src.bot.handlers import get_handlers_router
-from src.bot.middlewares import RemoveLastKeyboardMiddleware
+from src.bot.middlewares import (
+    DBSessionMiddleware,
+    RemoveLastKeyboardMiddleware,
+    UserAccessMiddleware,
+)
 from src.config import settings
 from src.services.rate_limiter import rate_limiter
 
@@ -22,8 +26,18 @@ bot = Bot(
 storage = RedisStorage.from_url(settings.REDIS_URL)
 dp = Dispatcher(storage=storage)
 
-dp.message.middleware(RemoveLastKeyboardMiddleware())
-dp.callback_query.middleware(RemoveLastKeyboardMiddleware())
+db_session_middleware = DBSessionMiddleware()
+user_access_middleware = UserAccessMiddleware(bot=bot, admin_id=settings.ADMIN_ID)
+remove_keyboard_middleware = RemoveLastKeyboardMiddleware()
+
+dp.message.middleware(db_session_middleware)
+dp.callback_query.middleware(db_session_middleware)
+
+dp.message.middleware(user_access_middleware)
+dp.callback_query.middleware(user_access_middleware)
+
+dp.message.middleware(remove_keyboard_middleware)
+dp.callback_query.middleware(remove_keyboard_middleware)
 
 dp.include_router(get_handlers_router())
 

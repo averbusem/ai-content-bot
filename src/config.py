@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     BOT_TOKEN: str = ""
+    ADMIN_ID: int
 
     DB_HOST: str = ""
     DB_PORT: str = ""
