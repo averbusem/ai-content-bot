@@ -59,7 +59,7 @@ class UserService:
             await self.session.rollback()
             raise
 
-    async def ensure_admin_user(
+    async def ensure_admin(
         self,
         telegram_id: int,
         username: Optional[str],

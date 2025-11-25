@@ -74,6 +74,7 @@ class UserAccessMiddleware(BaseMiddleware):
         session: Optional[AsyncSession] = data.get("session")
         from_user = self._extract_user(event)
 
+        # Нельзя проверить доступ => не блокируем обработку
         if session is None or from_user is None:
             return await handler(event, data)
 
@@ -87,7 +88,7 @@ class UserAccessMiddleware(BaseMiddleware):
         )
 
         if telegram_id == self.admin_id:
-            await user_service.ensure_admin_user(
+            await user_service.ensure_admin(
                 telegram_id=telegram_id,
                 username=username,
             )
