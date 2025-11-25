@@ -54,6 +54,7 @@ async def setup_bot():
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Перезапустить бота"),
+            BotCommand(command="use", description="Стать инициатором в групповом чате"),
         ]
     )
     await bot.delete_webhook(drop_pending_updates=True)

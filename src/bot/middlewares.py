@@ -128,10 +128,10 @@ class GroupChatAccessMiddleware(BaseMiddleware):
         is_start_command = (
             isinstance(event, types.Message)
             and event.text
-            and event.text.startswith("/start")
+            and event.text.startswith("/use")
         )
 
-        # Если это команда /start, проверяем, есть ли активный процесс у текущего инициатора
+        # Если это команда /use, проверяем, есть ли активный процесс у текущего инициатора
         if (
             is_start_command
             and initiator_user_id is not None
@@ -173,7 +173,7 @@ class GroupChatAccessMiddleware(BaseMiddleware):
                 except Exception as e:
                     logger.warning(f"Ошибка при проверке состояния инициатора: {e}")
 
-        # Если это команда /start или инициатор еще не установлен, устанавливаем текущего пользователя как инициатора
+        # Если это команда /use или инициатор еще не установлен, устанавливаем текущего пользователя как инициатора
         if is_start_command or initiator_user_id is None:
             await rate_limiter.redis_client.set(initiator_key, str(user_id))
             await rate_limiter.redis_client.expire(initiator_key, 180)
