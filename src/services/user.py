@@ -59,6 +59,43 @@ class UserService:
             await self.session.rollback()
             raise
 
+    async def ensure_admin_user(
+        self,
+        telegram_id: int,
+        username: Optional[str],
+    ) -> User:
+        """Гарантирует, что администратор существует и активен."""
+        try:
+            user = await self.repository.get_by_telegram_id(
+                session=self.session,
+                telegram_id=telegram_id,
+            )
+
+            if user is None:
+                user = User(
+                    telegram_id=telegram_id,
+                    username=username,
+                    is_active=True,
+                )
+                self.session.add(user)
+            else:
+                updated = False
+                if not user.is_active:
+                    user.is_active = True
+                    updated = True
+                if username and user.username != username:
+                    user.username = username
+                    updated = True
+                if not updated:
+                    await self.session.commit()
+                    return user
+
+            await self.session.commit()
+            return user
+        except Exception:
+            await self.session.rollback()
+            raise
+
     async def activate_user(self, telegram_id: int) -> Optional[User]:
         """Активирует пользователя и фиксирует изменения."""
         try:
@@ -72,9 +109,54 @@ class UserService:
             await self.session.rollback()
             raise
 
+    async def deactivate_user(self, telegram_id: int) -> Optional[User]:
+        """Деактивирует пользователя."""
+        try:
+            user = await self.repository.deactivate_user(
+                session=self.session,
+                telegram_id=telegram_id,
+            )
+            await self.session.commit()
+            return user
+        except Exception:
+            await self.session.rollback()
+            raise
+
     async def list_pending_users(self) -> Sequence[User]:
         """Возвращает пользователей, ожидающих активации."""
         return await self.repository.list_pending_users(session=self.session)
+
+    async def activate_user_by_username(self, username: str) -> Optional[User]:
+        try:
+            user = await self.repository.get_by_username(
+                session=self.session,
+                username=username,
+            )
+            if user is None:
+                return None
+
+            user.is_active = True
+            await self.session.commit()
+            return user
+        except Exception:
+            await self.session.rollback()
+            raise
+
+    async def deactivate_user_by_username(self, username: str) -> Optional[User]:
+        try:
+            user = await self.repository.get_by_username(
+                session=self.session,
+                username=username,
+            )
+            if user is None:
+                return None
+
+            user.is_active = False
+            await self.session.commit()
+            return user
+        except Exception:
+            await self.session.rollback()
+            raise
 
     async def send_access_request_to_admin(
         self,

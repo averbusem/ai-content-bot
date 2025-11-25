@@ -18,6 +18,15 @@ class UserRepository:
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_username(
+        self,
+        session: AsyncSession,
+        username: str,
+    ) -> Optional[User]:
+        query = select(User).where(User.username == username)
+        result = await session.execute(query)
+        return result.scalar_one_or_none()
+
     async def create_pending_user(
         self,
         session: AsyncSession,
@@ -57,3 +66,16 @@ class UserRepository:
         )
         result = await session.execute(query)
         return result.scalars().all()
+
+    async def deactivate_user(
+        self,
+        session: AsyncSession,
+        telegram_id: int,
+    ) -> Optional[User]:
+        user = await self.get_by_telegram_id(session=session, telegram_id=telegram_id)
+        if user is None:
+            return None
+
+        user.is_active = False
+        await session.flush()
+        return user

@@ -36,6 +36,36 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def admin_user_management_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="📋 Посмотреть запросы", callback_data="admin_menu:requests"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="⛔ Заблокировать", callback_data="admin_menu:block")
+    )
+    builder.add(
+        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def admin_back_to_main_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        InlineKeyboardButton(
+            text="Управление пользователями",
+            callback_data="admin_menu:back",
+        )
+    )
+    return builder.as_markup()
+
+
 def back_to_menu_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 

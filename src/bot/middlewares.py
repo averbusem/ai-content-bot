@@ -80,15 +80,19 @@ class UserAccessMiddleware(BaseMiddleware):
         telegram_id = from_user.id
         username = from_user.username
 
-        if telegram_id == self.admin_id:
-            data["current_user_is_admin"] = True
-            return await handler(event, data)
-
         user_service = UserService(
             session=session,
             bot=self.bot,
             admin_id=self.admin_id,
         )
+
+        if telegram_id == self.admin_id:
+            await user_service.ensure_admin_user(
+                telegram_id=telegram_id,
+                username=username,
+            )
+            data["is_admin"] = True
+            return await handler(event, data)
 
         user, created = await self._ensure_user(
             user_service=user_service,
@@ -98,7 +102,7 @@ class UserAccessMiddleware(BaseMiddleware):
 
         if user and user.is_active:
             data["current_user"] = user
-            data["current_user_is_admin"] = False
+            data["is_admin"] = False
             return await handler(event, data)
 
         if created:
@@ -132,7 +136,14 @@ class UserAccessMiddleware(BaseMiddleware):
         if user is None:
             return
         try:
-            await user_service.send_access_request_to_admin(user=user)
+            await user_service.send_access_request_to_admin(
+                user=user,
+                text=(
+                    f"Пользователь {user.username or 'без username'} "
+                    f"({user.telegram_id}) запрашивает доступ.\n\n"
+                    "Откройте /admin → «Посмотреть запросы», чтобы выдать доступ."
+                ),
+            )
         except Exception:
             logger.exception(
                 "Не удалось отправить запрос на доступ админу от %s", user.telegram_id
