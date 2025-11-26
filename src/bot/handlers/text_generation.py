@@ -15,6 +15,7 @@ from src.bot.keyboards import (
 from src.bot.states import TextGenerationStates, MainMenuStates
 from src.services.ai_manager import ai_manager
 from src.bot.handlers.utils.image_overlay import build_image_with_overlay
+from src.services.service_decorators import TextLengthLimitError
 
 router = Router()
 
@@ -87,6 +88,15 @@ async def generate_post_with_image(
 
         return await message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
+        )
+
+    except TextLengthLimitError:
+        await loading_msg.delete()
+        await state.set_state(TextGenerationStates.free_text_input)
+        return await message.answer(
+            "❌ Не удалось получить текст подходящей длины (до 1024 символов).\n"
+            "Попробуйте описать желаемый пост иначе.",
+            reply_markup=back_to_menu_keyboard(),
         )
 
     except Exception:
@@ -474,6 +484,14 @@ async def editing_handler(message: types.Message, state: FSMContext):
         await track_user_operation(user_id=user_id)
         return await message.answer(
             "Выберите действие", reply_markup=text_generation_results_keyboard()
+        )
+
+    except TextLengthLimitError:
+        await loading_msg.delete()
+        return await message.answer(
+            "❌ Не удалось получить текст подходящей длины (до 1024 символов).\n"
+            "Попробуйте переформулировать запрос.",
+            reply_markup=back_to_menu_keyboard(),
         )
 
     except Exception:

@@ -9,6 +9,7 @@ from src.bot.keyboards import (
 )
 from src.bot.states import TextGenerationFromExampleStates, MainMenuStates
 from src.services.ai_manager import ai_manager
+from src.services.service_decorators import TextLengthLimitError
 
 router = Router()
 
@@ -201,6 +202,15 @@ async def generate_post_from_example(
 
         return await message.answer(
             "Выберите действие", reply_markup=from_example_generation_results_keyboard()
+        )
+
+    except TextLengthLimitError:
+        await loading_msg.delete()
+        await state.set_state(TextGenerationFromExampleStates.example_topic_input)
+        return await message.answer(
+            "❌ Не удалось получить текст подходящей длины (до 1024 символов).\n"
+            "Попробуйте описать тему иначе.",
+            reply_markup=back_to_menu_keyboard(),
         )
 
     except Exception:

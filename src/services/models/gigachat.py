@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, List, Dict
 from src.config import settings
-from src.services.service_decorators import with_retry
+from src.services.service_decorators import with_retry, ensure_text_length
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +180,7 @@ class GigaChatModel:
                     f"Ошибка анализа изображения: HTTP {e.response.status_code}: {error_detail}"
                 )
 
+    @ensure_text_length()
     @with_retry
     async def generate_text(
         self,

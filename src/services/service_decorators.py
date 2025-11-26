@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from functools import wraps
-from typing import Callable
+from typing import Callable, Awaitable
 import httpx
 from src.config import settings
 
@@ -42,3 +42,40 @@ def with_retry(func: Callable):
         raise last_exception
 
     return wrapper
+
+
+class TextLengthLimitError(Exception):
+    """Raised when we fail to produce text within configured limits."""
+
+
+def ensure_text_length(
+    max_length: int = 1024,
+    max_attempts: int = 3,
+) -> Callable[[Callable[..., Awaitable[str]]], Callable[..., Awaitable[str]]]:
+    """
+    Декоратор для повторной генерации текста, если его длина больше `max_length`
+    """
+
+    def decorator(func: Callable[..., Awaitable[str]]):
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> str:
+            for attempt in range(max_attempts):
+                text = await func(*args, **kwargs)
+                sanitized = (text or "").strip()
+                if not sanitized or len(sanitized) <= max_length:
+                    return sanitized
+
+                logger.warning(
+                    "Generated text exceeded %s chars on attempt %s/%s",
+                    max_length,
+                    attempt + 1,
+                    max_attempts,
+                )
+
+            raise TextLengthLimitError(
+                f"Max length {max_length} exceeded after {max_attempts} attempts"
+            )
+
+        return wrapper
+
+    return decorator
