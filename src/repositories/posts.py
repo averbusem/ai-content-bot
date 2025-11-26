@@ -5,7 +5,7 @@ from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Post
-from src.schemas.posts import PostCreateData
+from src.schemas.posts import PostCreateDataSchema
 
 
 class PostRepository:
@@ -14,7 +14,7 @@ class PostRepository:
     async def create_post(
         self,
         session: AsyncSession,
-        data: PostCreateData,
+        data: PostCreateDataSchema,
     ) -> Post:
         """
         Создать пост на основе объединённых данных контента и расписания.

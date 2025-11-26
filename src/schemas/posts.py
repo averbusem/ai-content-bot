@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from src.db.models import Post
 
 
-class PostContent(BaseModel):
+class PostContentSchema(BaseModel):
     """Контент поста: текст + опциональная картинка."""
 
     text: str = Field(..., description="Текст поста")
@@ -16,15 +16,15 @@ class PostContent(BaseModel):
     )
 
 
-class PostCreate(BaseModel):
+class PostCreateSchema(BaseModel):
     """Данные для создания поста из FSM."""
 
     user_id: int
     chat_id: int
-    content: PostContent
+    content: PostContentSchema
 
 
-class PostScheduleInput(BaseModel):
+class PostScheduleInputSchema(BaseModel):
     """
     Входные данные от пользователя для настройки расписания.
 
@@ -36,7 +36,7 @@ class PostScheduleInput(BaseModel):
     auto_publish: bool = True
 
 
-class PostScheduleCreate(BaseModel):
+class PostScheduleCreateSchema(BaseModel):
     """
     Нормализованные данные расписания для записи в БД.
 
@@ -52,7 +52,7 @@ class PostScheduleCreate(BaseModel):
     aps_job_id_publish: Optional[str] = None
 
 
-class PostCreateData(BaseModel):
+class PostCreateDataSchema(BaseModel):
     """
     Объединённые данные для создания Post в БД.
 
@@ -62,7 +62,7 @@ class PostCreateData(BaseModel):
     id: Optional[str] = None
     user_id: int
     chat_id: int
-    content: PostContent
+    content: PostContentSchema
 
     status: str = "scheduled"
     publish_at: datetime
@@ -78,13 +78,13 @@ class PostCreateData(BaseModel):
         return self.model_dump(exclude_none=True)
 
 
-class PostRead(BaseModel):
+class PostReadSchema(BaseModel):
     """DTO поста для использования в сервисах/хэндлерах."""
 
     id: str
     user_id: int
     chat_id: int
-    content: PostContent
+    content: PostContentSchema
     status: str
     publish_at: datetime
     remind_at: datetime
@@ -92,11 +92,11 @@ class PostRead(BaseModel):
     state: str
 
     @classmethod
-    def from_model(cls, post: Post) -> "PostRead":
+    def from_model(cls, post: Post) -> "PostReadSchema":
         return cls.model_validate(post, from_attributes=True)
 
 
-class ScheduledPostRead(BaseModel):
+class ScheduledPostReadSchema(BaseModel):
     """
     Удобная схема для возврата из сервисов.
 
@@ -106,7 +106,7 @@ class ScheduledPostRead(BaseModel):
     id: str
     user_id: int
     chat_id: int
-    content: PostContent
+    content: PostContentSchema
     status: str
 
     publish_at: datetime
@@ -125,5 +125,5 @@ class ScheduledPostRead(BaseModel):
         return int(self.remind_offset.total_seconds() // 60)
 
     @classmethod
-    def from_model(cls, post: Post) -> "ScheduledPostRead":
+    def from_model(cls, post: Post) -> "ScheduledPostReadSchema":
         return cls.model_validate(post, from_attributes=True)
