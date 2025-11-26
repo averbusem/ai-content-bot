@@ -3,15 +3,17 @@ from aiogram.fsm.context import FSMContext
 
 from src.bot.bot_decorators import check_user_limit
 from src.bot.keyboards import (
-    main_menu_keyboard,
     back_to_menu_keyboard,
+    main_menu_keyboard,
     text_generation_method_keyboard,
+    post_schedule_main_keyboard,
 )
 from src.bot.states import (
+    ContentPlanStates,
     MainMenuStates,
+    PostScheduleStates,
     TextGenerationStates,
     TextEditorStates,
-    ContentPlanStates,
 )
 
 router = Router()
@@ -60,4 +62,20 @@ async def content_plan_start(callback: types.CallbackQuery, state: FSMContext):
         "На какой период создать план?\n"
         "Укажите количество дней (например: 7, 14, 30)",
         reply_markup=back_to_menu_keyboard(),
+    )
+
+
+@router.callback_query(F.data == "main_menu:schedule_post")
+async def schedule_post_start(callback: types.CallbackQuery, state: FSMContext):
+    """
+    Переход в меню планирования поста из главного меню.
+
+    Дальнейший флоу обрабатывается в модуле handlers.post_schedule.
+    """
+    await state.set_state(PostScheduleStates.mode_selection)
+    await callback.answer()
+    return await callback.message.edit_text(
+        "📆 <b>Планирование поста</b>\n\n"
+        "Выберите режим планирования: напоминание или автопубликация.",
+        reply_markup=post_schedule_main_keyboard(),
     )

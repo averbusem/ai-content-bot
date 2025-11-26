@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import Optional
 from uuid import UUID
 
 from aiogram import Bot
-
-from src.bot import bot as telegram_bot
 from src.db.database import session_factory
 from src.db.models import Post
 from src.repositories.posts import PostRepository
@@ -18,30 +17,37 @@ logger = logging.getLogger(__name__)
 post_repository = PostRepository()
 
 
+def _format_datetime_moscow(dt_utc: datetime) -> str:
+    """
+    Преобразует UTC datetime в строку по Мск в человекочитаемом формате.
+    """
+    moscow_dt = dt_utc.astimezone(timezone(timedelta(hours=3)))
+    return moscow_dt.strftime("%d.%m.%Y %H:%M")
+
+
 def _get_bot() -> Bot:
     """
     Возвращает экземпляр бота.
 
     Вынесено в функцию, чтобы при необходимости было проще заменить реализацию.
     """
+    # Ленивая загрузка, чтобы избежать циклического импорта при инициализации бота.
+    from src.bot import bot as telegram_bot  # noqa: WPS433
+
     return telegram_bot
 
 
 def _build_post_preview_text(post: Post) -> str:
     """
-    Формирует краткое текстовое резюме поста для напоминания.
+    Формирует текстовое содержимое поста для напоминания без обрезки.
     """
     content = post.content or {}
     text: Optional[str] = content.get("text")
 
     if text:
-        # Обрезаем слишком длинный текст, чтобы напоминание оставалось компактным
-        max_len = 500
-        preview = text if len(text) <= max_len else text[: max_len - 3] + "..."
-    else:
-        preview = "Запланирован пост без текстового описания."
+        return text
 
-    return f"Напоминание о запланированном посте:\n\n{preview}\n\nВыберите действие:"
+    return "Запланирован пост без текстового описания."
 
 
 async def send_reminder_job(post_id: UUID) -> None:
@@ -67,12 +73,42 @@ async def send_reminder_job(post_id: UUID) -> None:
 
             bot = _get_bot()
 
-            text = _build_post_preview_text(post)
-
+            # Сначала отправляем служебное сообщение-напоминание с указанием времени публикации
+            moscow_publish_at = _format_datetime_moscow(post.publish_at)
             await bot.send_message(
                 chat_id=post.user_id,
-                text=text,
+                text=f"Напоминание о запланированном посте {moscow_publish_at}",
             )
+
+            # Затем отправляем сам пост целиком (как при публикации),
+            # но в личку пользователю
+            content = post.content or {}
+            text: Optional[str] = content.get("text")
+            photo_file_id: Optional[str] = content.get("photo_file_id")
+
+            if photo_file_id is not None:
+                # Есть картинка — отправляем её с подписью (если есть)
+                if text:
+                    await bot.send_photo(
+                        chat_id=post.user_id,
+                        photo=photo_file_id,
+                        caption=text,
+                    )
+                else:
+                    await bot.send_photo(
+                        chat_id=post.user_id,
+                        photo=photo_file_id,
+                    )
+            else:
+                # Только текстовый пост
+                if text:
+                    await bot.send_message(chat_id=post.user_id, text=text)
+                else:
+                    logger.info(
+                        "Post content is empty for post_id=%s, nothing to send in reminder",
+                        post_id,
+                    )
+                    return
 
             # Обновляем состояние поста
             post.state = "reminded"

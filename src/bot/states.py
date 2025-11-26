@@ -84,6 +84,25 @@ class ContentPlanStates(StatesGroup):
     waiting_results = State()
 
 
+class PostScheduleStates(StatesGroup):
+    """
+    FSM-состояния для создания запланированного поста.
+
+    Флоу:
+    - выбор режима (напоминание / автопубликация);
+    - ввод локальной даты/времени публикации;
+    - выбор интервала напоминания;
+    - ввод контента поста (текст + опциональная картинка);
+    - подтверждение настроек перед сохранением.
+    """
+
+    mode_selection = State()
+    publish_at_input = State()
+    remind_offset_selection = State()
+    content_input = State()
+    confirmation = State()
+
+
 class TextGenerationFromExampleStates(StatesGroup):
     waiting_results = State()
     editing = State()
