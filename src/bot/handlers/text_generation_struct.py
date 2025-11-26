@@ -1,6 +1,7 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
@@ -66,12 +67,14 @@ def _struct_build_overlay_config(
     return config
 
 
-async def _start_struct_post_generation(callback_or_message, state: FSMContext):
+async def _start_struct_post_generation(
+    callback_or_message, state: FSMContext, session: AsyncSession
+):
     data = await state.get_data()
     user_id = callback_or_message.from_user.id
     await state.set_state(TextGenerationStructStates.waiting_results)
     return await generate_struct_post_with_image(
-        callback_or_message, state, data, user_id
+        callback_or_message, state, data, user_id, session
     )
 
 
@@ -496,7 +499,11 @@ async def question_9_length_handler(callback: types.CallbackQuery, state: FSMCon
 
 
 async def generate_struct_post_with_image(
-    callback_or_message, state: FSMContext, data: dict, user_id: int
+    callback_or_message,
+    state: FSMContext,
+    data: dict,
+    user_id: int,
+    session: AsyncSession,
 ):
     is_callback = isinstance(callback_or_message, types.CallbackQuery)
 
@@ -508,6 +515,7 @@ async def generate_struct_post_with_image(
     try:
         post = await ai_manager.generate_structured_form_post(
             user_id=user_id,
+            session=session,
             event=data.get("event", ""),
             description=data.get("description", ""),
             goal=data.get("goal", "struct_goal:work"),
@@ -622,7 +630,9 @@ async def question_10_invalid_handler(message: types.Message, state: FSMContext)
 @router.callback_query(
     TextGenerationStructStates.image_overlay_mode, F.data.startswith("overlay_mode:")
 )
-async def struct_overlay_mode_handler(callback: types.CallbackQuery, state: FSMContext):
+async def struct_overlay_mode_handler(
+    callback: types.CallbackQuery, state: FSMContext, session: AsyncSession
+):
     mode = callback.data.split(":")[1]
     await callback.answer()
 
@@ -634,7 +644,7 @@ async def struct_overlay_mode_handler(callback: types.CallbackQuery, state: FSMC
             overlay_background=None,
             overlay_font=None,
         )
-        return await _start_struct_post_generation(callback, state)
+        return await _start_struct_post_generation(callback, state, session)
 
     if mode == "custom":
         await state.update_data(overlay_mode="custom")
@@ -726,12 +736,14 @@ async def struct_overlay_background_handler(
 @router.callback_query(
     TextGenerationStructStates.image_overlay_font, F.data.startswith("overlay_font:")
 )
-async def struct_overlay_font_handler(callback: types.CallbackQuery, state: FSMContext):
+async def struct_overlay_font_handler(
+    callback: types.CallbackQuery, state: FSMContext, session: AsyncSession
+):
     font_value = callback.data.split(":")[1]
     await callback.answer()
 
     await state.update_data(overlay_font=None if font_value == "random" else font_value)
-    return await _start_struct_post_generation(callback, state)
+    return await _start_struct_post_generation(callback, state, session)
 
 
 # Обработка результатов
@@ -802,7 +814,9 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 
 
 @router.message(TextGenerationStructStates.editing, F.text)
-async def editing_handler(message: types.Message, state: FSMContext):
+async def editing_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     edit_request = message.text.strip()
 
     if not edit_request:
@@ -827,6 +841,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
         # Обновляем пост
         updated_post = await ai_manager.generate_free_text_post(
             user_id=user_id,
+            session=session,
             user_idea=f"Исходный пост:\n{original_post}\n\nИзменения: {edit_request}",
             style="разговорный",
         )

@@ -1,6 +1,7 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
@@ -38,13 +39,20 @@ async def free_text_handler(callback: types.CallbackQuery, state: FSMContext):
 
 
 async def generate_post_with_image(
-    message: types.Message, state: FSMContext, user_id: int, user_text: str
+    message: types.Message,
+    state: FSMContext,
+    user_id: int,
+    session: AsyncSession,
+    user_text: str,
 ):
     loading_msg = await message.answer("⏳ Создаю пост...")
 
     try:
         post = await ai_manager.generate_free_text_post(
-            user_id=user_id, user_idea=user_text, style="разговорный"
+            user_id=user_id,
+            session=session,
+            user_idea=user_text,
+            style="разговорный",
         )
 
         await loading_msg.edit_text("⏳ Создаю изображение для поста...")
@@ -75,7 +83,9 @@ async def generate_post_with_image(
 
 
 @router.message(TextGenerationStates.free_text_input, F.text)
-async def free_text_input_handler(message: types.Message, state: FSMContext):
+async def free_text_input_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     user_text = message.text.strip()
 
     if not user_text:
@@ -88,11 +98,19 @@ async def free_text_input_handler(message: types.Message, state: FSMContext):
     await state.set_state(TextGenerationStates.waiting_results)
     await state.update_data(user_text=user_text)
 
-    return await generate_post_with_image(message, state, user_id, user_text)
+    return await generate_post_with_image(
+        message=message,
+        state=state,
+        user_id=user_id,
+        session=session,
+        user_text=user_text,
+    )
 
 
 @router.message(TextGenerationStates.free_text_input, F.voice)
-async def free_text_voice_handler(message: types.Message, state: FSMContext):
+async def free_text_voice_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     transcribe_msg = await message.answer("⏳ Распознаю речь...")
 
     try:
@@ -119,7 +137,11 @@ async def free_text_voice_handler(message: types.Message, state: FSMContext):
         await state.update_data(user_text=user_text.strip())
 
         return await generate_post_with_image(
-            message, state, user_id, user_text.strip()
+            message=message,
+            state=state,
+            user_id=user_id,
+            session=session,
+            user_text=user_text.strip(),
         )
 
     except Exception:
@@ -200,7 +222,9 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 
 
 @router.message(TextGenerationStates.editing, F.text)
-async def editing_handler(message: types.Message, state: FSMContext):
+async def editing_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     edit_request = message.text.strip()
     data = await state.get_data()
     original_post = data.get("post", "")
@@ -218,6 +242,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
     try:
         updated_post = await ai_manager.generate_free_text_post(
             user_id=user_id,
+            session=session,
             user_idea=f"Исходный пост:\n{original_post}\n\nИзменения: {edit_request}",
             style="разговорный",
         )

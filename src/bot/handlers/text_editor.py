@@ -1,5 +1,6 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.keyboards import (
     back_to_menu_keyboard,
@@ -34,7 +35,9 @@ async def text_invalid_handler(message: types.Message, state: FSMContext):
 
 
 @router.message(TextEditorStates.edit_request, F.text)
-async def edit_request_handler(message: types.Message, state: FSMContext):
+async def edit_request_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     edit_text = message.text.strip()
     user_id = message.from_user.id
 
@@ -47,6 +50,7 @@ async def edit_request_handler(message: types.Message, state: FSMContext):
     try:
         edited_text, errors, recommendations = await ai_manager.edit_post(
             user_id=user_id,
+            session=session,
             original_post=state_data["original_text"],
             edit_request=edit_text,
         )
@@ -119,7 +123,9 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 
 
 @router.message(TextEditorStates.editing, F.text)
-async def editing_handler(message: types.Message, state: FSMContext):
+async def editing_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     edit_text = message.text.strip()
     data = await state.get_data()
     original_post = data.get("post", "")
@@ -136,7 +142,10 @@ async def editing_handler(message: types.Message, state: FSMContext):
     try:
         # Используем edit_post для редактирования на основе исходного поста
         edited_text, errors, recommendations = await ai_manager.edit_post(
-            user_id=user_id, original_post=original_post, edit_request=edit_text
+            user_id=user_id,
+            session=session,
+            original_post=original_post,
+            edit_request=edit_text,
         )
     except Exception:
         await loading_msg.delete()

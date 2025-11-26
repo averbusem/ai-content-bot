@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from aiogram import BaseMiddleware, Bot, types
 from aiogram.exceptions import TelegramBadRequest
@@ -13,6 +13,17 @@ from src.db.models import User
 from src.services.user import UserService
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_handler_name(handler: Any) -> str:
+    """Возвращает человекочитаемое имя обработчика для логов."""
+    name = getattr(handler, "__name__", None)
+    if name:
+        return name
+    func = getattr(handler, "func", None)
+    if func is not None:
+        return _resolve_handler_name(func)
+    return handler.__class__.__name__
 
 
 class DBSessionMiddleware(BaseMiddleware):
@@ -30,7 +41,7 @@ class DBSessionMiddleware(BaseMiddleware):
                 await session.rollback()
                 logger.exception(
                     "Error in middleware %s for event %s Exception %s",
-                    handler.__name__,
+                    _resolve_handler_name(handler),
                     event,
                     e,
                 )

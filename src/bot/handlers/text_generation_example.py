@@ -1,5 +1,6 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
@@ -78,7 +79,9 @@ async def example_post_input_handler(message: types.Message, state: FSMContext):
 
 
 @router.message(TextGenerationFromExampleStates.example_topic_input, F.text)
-async def example_topic_text_handler(message: types.Message, state: FSMContext):
+async def example_topic_text_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     """Получение новой темы текстом и генерация поста"""
     new_topic = message.text.strip()
 
@@ -102,12 +105,19 @@ async def example_topic_text_handler(message: types.Message, state: FSMContext):
     await state.set_state(TextGenerationFromExampleStates.waiting_results)
 
     return await generate_post_from_example(
-        message, state, user_id, example_post, new_topic
+        message=message,
+        state=state,
+        user_id=user_id,
+        session=session,
+        example_post=example_post,
+        new_topic=new_topic,
     )
 
 
 @router.message(TextGenerationFromExampleStates.example_topic_input, F.voice)
-async def example_topic_voice_handler(message: types.Message, state: FSMContext):
+async def example_topic_voice_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     """Получение новой темы голосом и генерация поста"""
     transcribe_msg = await message.answer("⏳ Распознаю речь...")
 
@@ -144,7 +154,12 @@ async def example_topic_voice_handler(message: types.Message, state: FSMContext)
         await state.set_state(TextGenerationFromExampleStates.waiting_results)
 
         return await generate_post_from_example(
-            message, state, user_id, example_post, new_topic.strip()
+            message=message,
+            state=state,
+            user_id=user_id,
+            session=session,
+            example_post=example_post,
+            new_topic=new_topic.strip(),
         )
 
     except Exception:
@@ -177,6 +192,7 @@ async def generate_post_from_example(
     message: types.Message,
     state: FSMContext,
     user_id: int,
+    session: AsyncSession,
     example_post: str,
     new_topic: str,
 ):
@@ -186,6 +202,7 @@ async def generate_post_from_example(
     try:
         post = await ai_manager.generate_post_from_example(
             user_id=user_id,
+            session=session,
             example_post=example_post,
             new_topic=new_topic,
         )
@@ -234,7 +251,9 @@ async def text_result_edit_handler(callback: types.CallbackQuery, state: FSMCont
 
 
 @router.message(TextGenerationFromExampleStates.editing, F.text)
-async def editing_handler(message: types.Message, state: FSMContext):
+async def editing_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     edit_request = message.text.strip()
 
     if not edit_request:
@@ -259,6 +278,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
     try:
         updated_post = await ai_manager.edit_post(
             user_id=user_id,
+            session=session,
             original_post=original_post,
             edit_request=edit_request,
         )
