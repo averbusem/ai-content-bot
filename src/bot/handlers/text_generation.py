@@ -1,3 +1,5 @@
+from typing import Optional
+
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
@@ -7,11 +9,27 @@ from src.bot.keyboards import (
     back_to_menu_keyboard,
     text_generation_results_keyboard,
     main_menu_keyboard,
+    image_attachment_type_keyboard,
+    image_attachment_position_keyboard,
 )
 from src.bot.states import TextGenerationStates, MainMenuStates
 from src.services.ai_manager import ai_manager
+from src.bot.handlers.utils.image_overlay import build_image_with_overlay
 
 router = Router()
+
+
+def _extract_image_file_id(message: types.Message) -> Optional[str]:
+    """Возвращает file_id изображения из сообщения пользователя."""
+    if message.photo:
+        return message.photo[-1].file_id
+
+    if message.document:
+        mime_type = message.document.mime_type or ""
+        if mime_type.startswith("image/"):
+            return message.document.file_id
+
+    return None
 
 
 @router.callback_query(F.data == "text_gen:free_text")
@@ -193,6 +211,204 @@ async def text_result_change_image_handler(
             "❌ Ошибка при создании изображения. Пожалуйста, попробуйте ещё раз позже",
             reply_markup=text_generation_results_keyboard(),
         )
+
+
+@router.callback_query(
+    TextGenerationStates.waiting_results, F.data == "text_result:add_overlay"
+)
+async def text_result_add_overlay_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
+    data = await state.get_data()
+    image_file_id = data.get("image_file_id")
+
+    if not image_file_id:
+        await callback.answer("Сначала сгенерируйте изображение", show_alert=True)
+        return
+
+    await state.set_state(TextGenerationStates.adding_overlay)
+    await state.update_data(
+        pending_overlay_file_id=None,
+        pending_overlay_type=None,
+    )
+
+    await callback.answer()
+    return await callback.message.answer(
+        "📎 Пришлите логотип или фотографию, которую нужно добавить на картинку.\n"
+        "Можно отправить фото или файл с изображением.",
+        reply_markup=back_to_menu_keyboard(),
+    )
+
+
+@router.message(TextGenerationStates.adding_overlay, F.photo | F.document)
+async def adding_overlay_file_handler(message: types.Message, state: FSMContext):
+    file_id = _extract_image_file_id(message)
+
+    if not file_id:
+        return await message.answer(
+            "Пожалуйста, отправьте изображение (фото или файл).",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    await state.update_data(pending_overlay_file_id=file_id)
+    await state.set_state(TextGenerationStates.adding_overlay_type)
+    return await message.answer(
+        "Выберите, как использовать изображение:",
+        reply_markup=image_attachment_type_keyboard(),
+    )
+
+
+@router.message(TextGenerationStates.adding_overlay)
+async def adding_overlay_invalid_handler(message: types.Message):
+    return await message.answer(
+        "Пожалуйста, отправьте изображение (фото или файл).",
+        reply_markup=back_to_menu_keyboard(),
+    )
+
+
+@router.callback_query(
+    TextGenerationStates.adding_overlay_type,
+    F.data.startswith("image_asset:type:"),
+)
+async def overlay_type_selected_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
+    _, _, value = callback.data.split(":")
+
+    if value == "cancel":
+        await state.set_state(TextGenerationStates.waiting_results)
+        await state.update_data(
+            pending_overlay_file_id=None,
+            pending_overlay_type=None,
+        )
+        await callback.answer("Добавление отменено")
+        return await callback.message.answer(
+            "Выберите действие", reply_markup=text_generation_results_keyboard()
+        )
+
+    if value not in {"logo", "photo"}:
+        await callback.answer("Пожалуйста, используйте кнопки ниже", show_alert=True)
+        return
+
+    await state.update_data(pending_overlay_type=value)
+    await state.set_state(TextGenerationStates.adding_overlay_position)
+    await callback.answer()
+    return await callback.message.answer(
+        "📍 Где разместить изображение?",
+        reply_markup=image_attachment_position_keyboard(),
+    )
+
+
+@router.message(TextGenerationStates.adding_overlay_type)
+async def overlay_type_invalid_handler(message: types.Message):
+    return await message.answer(
+        "Пожалуйста, выберите вариант с помощью кнопок ниже.",
+        reply_markup=image_attachment_type_keyboard(),
+    )
+
+
+@router.callback_query(
+    TextGenerationStates.adding_overlay_position,
+    F.data.startswith("image_asset:pos:"),
+)
+async def overlay_position_selected_handler(
+    callback: types.CallbackQuery, state: FSMContext
+):
+    _, _, value = callback.data.split(":")
+
+    if value == "cancel":
+        await state.set_state(TextGenerationStates.waiting_results)
+        await state.update_data(
+            pending_overlay_file_id=None,
+            pending_overlay_type=None,
+        )
+        await callback.answer("Добавление отменено")
+        return await callback.message.answer(
+            "Выберите действие", reply_markup=text_generation_results_keyboard()
+        )
+
+    data = await state.get_data()
+    base_image_id = data.get("image_file_id")
+    overlay_file_id = data.get("pending_overlay_file_id")
+    overlay_type = data.get("pending_overlay_type")
+
+    if not all([base_image_id, overlay_file_id, overlay_type]):
+        await state.set_state(TextGenerationStates.waiting_results)
+        await state.update_data(
+            pending_overlay_file_id=None,
+            pending_overlay_type=None,
+        )
+        await callback.answer("Изображение не найдено", show_alert=True)
+        return await callback.message.answer(
+            "❌ Не удалось подготовить изображение. Попробуйте начать заново.",
+            reply_markup=text_generation_results_keyboard(),
+        )
+
+    await callback.answer()
+    processing_msg = await callback.message.answer("⏳ Добавляю изображение...")
+
+    try:
+        merged_bytes = await build_image_with_overlay(
+            bot=callback.bot,
+            base_file_id=base_image_id,
+            overlay_file_id=overlay_file_id,
+            overlay_type=overlay_type,
+            position=value,
+        )
+        try:
+            await processing_msg.delete()
+        except Exception:
+            pass
+
+        post_text = data.get("post") or "Обновлённое изображение"
+        photo_message = await callback.message.answer_photo(
+            photo=BufferedInputFile(
+                merged_bytes,
+                filename="post_image_with_overlay.png",
+            ),
+            caption=post_text,
+        )
+
+        new_file_id = (
+            photo_message.photo[-1].file_id if photo_message.photo else base_image_id
+        )
+
+        await state.update_data(
+            image_file_id=new_file_id,
+            has_image=True,
+            pending_overlay_file_id=None,
+            pending_overlay_type=None,
+        )
+        await state.set_state(TextGenerationStates.waiting_results)
+
+        await track_user_operation(user_id=callback.from_user.id)
+
+        return await callback.message.answer(
+            "Выберите действие", reply_markup=text_generation_results_keyboard()
+        )
+
+    except Exception:
+        try:
+            await processing_msg.delete()
+        except Exception:
+            pass
+        await state.update_data(
+            pending_overlay_file_id=None,
+            pending_overlay_type=None,
+        )
+        await state.set_state(TextGenerationStates.waiting_results)
+        return await callback.message.answer(
+            "❌ Не удалось добавить изображение. Попробуйте другой файл.",
+            reply_markup=text_generation_results_keyboard(),
+        )
+
+
+@router.message(TextGenerationStates.adding_overlay_position)
+async def overlay_position_invalid_handler(message: types.Message):
+    return await message.answer(
+        "Пожалуйста, выберите позицию с помощью кнопок.",
+        reply_markup=image_attachment_position_keyboard(),
+    )
 
 
 @router.callback_query(F.data == "text_result:edit")
