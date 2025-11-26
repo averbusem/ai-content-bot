@@ -27,7 +27,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     )
     builder.add(
         InlineKeyboardButton(
-            text="⚙️ Рассказать об НКО", callback_data="main_menu:nko_data"
+            text="⚙️ Информация о НКО", callback_data="main_menu:nko_data"
         )
     )
     builder.add(InlineKeyboardButton(text="❓ Помощь", callback_data="main_menu:help"))

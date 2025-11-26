@@ -19,7 +19,8 @@ class NKODataStates(StatesGroup):
     forms = State()
     forms_other = State()
     region = State()
-    contacts = State()
+    email = State()
+    website = State()
 
 
 class TextGenerationStates(StatesGroup):
