@@ -10,12 +10,10 @@ from src.utils.setup_certificates import setup_certificates
 async def main():
     setup_certificates()
 
-    # Инициализируем планировщик задач APScheduler
     scheduler = init_scheduler(engine)
 
     await setup_bot()
 
-    # Запускаем APScheduler после инициализации бота
     scheduler.start()
 
     try:

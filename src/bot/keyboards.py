@@ -633,33 +633,6 @@ def from_example_generation_results_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def post_schedule_main_keyboard() -> InlineKeyboardMarkup:
-    """
-    Меню выбора режима планирования поста, доступное из главного меню по кнопке
-    «📆 Запланировать пост».
-    """
-    builder = InlineKeyboardBuilder()
-
-    builder.add(
-        InlineKeyboardButton(
-            text="⏰ Установить напоминание",
-            callback_data="post_schedule:set_reminder",
-        )
-    )
-    builder.add(
-        InlineKeyboardButton(
-            text="📆 Автопубликация",
-            callback_data="post_schedule:set_autopost",
-        )
-    )
-    builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
-    )
-
-    builder.adjust(1)
-    return builder.as_markup()
-
-
 def post_schedule_confirm_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура подтверждения настроек запланированного поста.

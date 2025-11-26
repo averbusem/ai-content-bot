@@ -6,7 +6,6 @@ from src.bot.keyboards import (
     back_to_menu_keyboard,
     main_menu_keyboard,
     text_generation_method_keyboard,
-    post_schedule_main_keyboard,
 )
 from src.bot.states import (
     ContentPlanStates,
@@ -68,14 +67,16 @@ async def content_plan_start(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "main_menu:schedule_post")
 async def schedule_post_start(callback: types.CallbackQuery, state: FSMContext):
     """
-    Переход в меню планирования поста из главного меню.
+    Переход к настройке напоминания из главного меню.
 
     Дальнейший флоу обрабатывается в модуле handlers.post_schedule.
     """
-    await state.set_state(PostScheduleStates.mode_selection)
+    await state.set_state(PostScheduleStates.publish_at_input)
     await callback.answer()
     return await callback.message.edit_text(
-        "📆 <b>Планирование поста</b>\n\n"
-        "Выберите режим планирования: напоминание или автопубликация.",
-        reply_markup=post_schedule_main_keyboard(),
+        "⏰ <b>Настройка напоминания</b>\n\n"
+        "Укажите дату и время публикации по Мск в формате:\n"
+        "<code>ДД.ММ.ГГГГ ЧЧ:ММ</code>\n\n"
+        "Например: <code>25.12.2025 10:30</code>.",
+        reply_markup=back_to_menu_keyboard(),
     )

@@ -33,7 +33,6 @@ class PostScheduleInputSchema(BaseModel):
 
     publish_at: str
     remind_offset_minutes: int
-    auto_publish: bool = True
 
 
 class PostScheduleCreateSchema(BaseModel):
@@ -46,10 +45,8 @@ class PostScheduleCreateSchema(BaseModel):
     publish_at: datetime
     remind_at: datetime
     remind_offset: timedelta
-    auto_publish: bool
     state: str = "pending"
     aps_job_id_remind: Optional[str] = None
-    aps_job_id_publish: Optional[str] = None
 
 
 class PostCreateDataSchema(BaseModel):
@@ -68,10 +65,8 @@ class PostCreateDataSchema(BaseModel):
     publish_at: datetime
     remind_offset: timedelta
     remind_at: datetime
-    auto_publish: bool = False
     state: str = "pending"
     aps_job_id_remind: Optional[str] = None
-    aps_job_id_publish: Optional[str] = None
 
     def to_model_fields(self) -> Dict[str, Any]:
         """Подготовить словарь полей для модели SQLAlchemy Post."""
@@ -88,7 +83,6 @@ class PostReadSchema(BaseModel):
     status: str
     publish_at: datetime
     remind_at: datetime
-    auto_publish: bool
     state: str
 
     @classmethod
@@ -113,11 +107,9 @@ class ScheduledPostReadSchema(BaseModel):
     remind_at: datetime
     remind_offset: timedelta
 
-    auto_publish: bool
     state: str
 
     aps_job_id_remind: Optional[str] = None
-    aps_job_id_publish: Optional[str] = None
 
     @property
     def remind_offset_minutes(self) -> int:

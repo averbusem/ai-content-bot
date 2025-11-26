@@ -8,10 +8,7 @@ from uuid import UUID
 from apscheduler.jobstores.base import JobLookupError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.jobs.post_schedule_jobs import (
-    publish_scheduled_post_job,
-    send_reminder_job,
-)
+from src.jobs.post_schedule_jobs import send_reminder_job
 from src.jobs.scheduler import get_scheduler
 from src.repositories.posts import PostRepository
 from src.schemas.posts import (
@@ -72,7 +69,6 @@ def _normalize_schedule_input(
         publish_at=publish_at_utc,
         remind_at=remind_at,
         remind_offset=remind_offset,
-        auto_publish=schedule_input.auto_publish,
         state="pending",
     )
 
@@ -115,7 +111,6 @@ class PostScheduleService:
             publish_at=schedule_data.publish_at,
             remind_offset=schedule_data.remind_offset,
             remind_at=schedule_data.remind_at,
-            auto_publish=schedule_data.auto_publish,
             state=schedule_data.state,
         )
 
@@ -131,74 +126,16 @@ class PostScheduleService:
         )
 
         post.aps_job_id_remind = remind_job.id
-        aps_job_id_publish: Optional[str] = None
-
-        if schedule_data.auto_publish:
-            publish_job = scheduler.add_job(
-                publish_scheduled_post_job,
-                trigger="date",
-                run_date=schedule_data.publish_at,
-                args=[UUID(post.id)],
-            )
-            aps_job_id_publish = publish_job.id
-            post.aps_job_id_publish = aps_job_id_publish
 
         await self.session.commit()
 
         logger.info(
-            "Scheduled post created: post_id=%s, remind_job_id=%s, publish_job_id=%s",
+            "Scheduled post created: post_id=%s, remind_job_id=%s",
             post.id,
             post.aps_job_id_remind,
-            aps_job_id_publish,
         )
 
         return ScheduledPostReadSchema.from_model(post)
-
-    async def publish_now(
-        self,
-        post_id: UUID,
-    ) -> None:
-        """
-        Публикует пост немедленно, если он ещё не опубликован/отменён.
-
-        Идемпотентна: повторные вызовы для уже опубликованного/отменённого поста — no-op.
-        """
-        post = await self.repository.get_by_id(session=self.session, post_id=post_id)
-        if post is None:
-            logger.warning("Post not found in publish_now. post_id=%s", post_id)
-            return
-
-        if post.status in ("published", "cancelled"):
-            logger.info(
-                "Skip publish_now for post_id=%s due to status=%s",
-                post_id,
-                post.status,
-            )
-            return
-
-        await publish_scheduled_post_job(post_id)
-
-        scheduler = get_scheduler()
-        for job_id in (post.aps_job_id_remind, post.aps_job_id_publish):
-            if not job_id:
-                continue
-            try:
-                scheduler.remove_job(job_id)
-            except JobLookupError:
-                logger.info(
-                    "Job already removed or not found in publish_now. post_id=%s, job_id=%s",
-                    post_id,
-                    job_id,
-                )
-
-        refreshed = await self.repository.get_by_id(
-            session=self.session,
-            post_id=post_id,
-        )
-        if refreshed is not None:
-            refreshed.aps_job_id_remind = None
-            refreshed.aps_job_id_publish = None
-            await self.session.commit()
 
     async def postpone(
         self,
@@ -207,6 +144,7 @@ class PostScheduleService:
         new_remind_offset_minutes: int,
     ) -> ScheduledPostReadSchema:
         """
+        Для будущего функционала.
         Переносит время публикации и напоминания, перепланируя job'ы APScheduler.
         """
         post = await self.repository.get_by_id(session=self.session, post_id=post_id)
@@ -216,21 +154,18 @@ class PostScheduleService:
         schedule_input = PostScheduleInputSchema(
             publish_at=new_publish_at_local,
             remind_offset_minutes=new_remind_offset_minutes,
-            auto_publish=post.auto_publish,
         )
         schedule_data = _normalize_schedule_input(schedule_input)
 
         scheduler = get_scheduler()
-        for job_id in (post.aps_job_id_remind, post.aps_job_id_publish):
-            if not job_id:
-                continue
+        if post.aps_job_id_remind:
             try:
-                scheduler.remove_job(job_id)
+                scheduler.remove_job(post.aps_job_id_remind)
             except JobLookupError:
                 logger.info(
                     "Job already removed or not found in postpone. post_id=%s, job_id=%s",
                     post_id,
-                    job_id,
+                    post.aps_job_id_remind,
                 )
 
         post.publish_at = schedule_data.publish_at
@@ -244,17 +179,6 @@ class PostScheduleService:
             args=[post_id],
         )
         post.aps_job_id_remind = remind_job.id
-
-        if schedule_data.auto_publish:
-            publish_job = scheduler.add_job(
-                publish_scheduled_post_job,
-                trigger="date",
-                run_date=schedule_data.publish_at,
-                args=[post_id],
-            )
-            post.aps_job_id_publish = publish_job.id
-        else:
-            post.aps_job_id_publish = None
 
         await self.session.commit()
 
@@ -272,6 +196,7 @@ class PostScheduleService:
         post_id: UUID,
     ) -> None:
         """
+        Для будущего функционала.
         Отменяет запланированный пост и удаляет связанные job'ы APScheduler.
         """
         post = await self.repository.get_by_id(session=self.session, post_id=post_id)
@@ -283,20 +208,17 @@ class PostScheduleService:
         post.state = "cancelled"
 
         scheduler = get_scheduler()
-        for job_id in (post.aps_job_id_remind, post.aps_job_id_publish):
-            if not job_id:
-                continue
+        if post.aps_job_id_remind:
             try:
-                scheduler.remove_job(job_id)
+                scheduler.remove_job(post.aps_job_id_remind)
             except JobLookupError:
                 logger.info(
                     "Job already removed or not found in cancel. post_id=%s, job_id=%s",
                     post_id,
-                    job_id,
+                    post.aps_job_id_remind,
                 )
 
         post.aps_job_id_remind = None
-        post.aps_job_id_publish = None
 
         await self.session.commit()
 
@@ -308,6 +230,7 @@ class PostScheduleService:
         new_content: PostContentSchema,
     ) -> None:
         """
+        Для будущего функционала.
         Обновляет контент поста в БД.
         """
         updated = await self.repository.update_content(

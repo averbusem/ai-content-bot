@@ -114,11 +114,6 @@ class Post(Base):
         doc="Время отправки напоминания (UTC)",
     )
 
-    auto_publish: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        doc="Включена ли автопубликация поста",
-    )
     state: Mapped[str] = mapped_column(
         String(32),
         default="pending",
@@ -129,11 +124,6 @@ class Post(Base):
         String(255),
         nullable=True,
         doc="ID APScheduler-задачи для напоминания",
-    )
-    aps_job_id_publish: Mapped[Optional[str]] = mapped_column(
-        String(255),
-        nullable=True,
-        doc="ID APScheduler-задачи для автопубликации",
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -31,40 +31,6 @@ def _format_datetime_moscow(dt_utc: datetime) -> str:
     return moscow_dt.strftime("%d.%m.%Y %H:%M")
 
 
-@router.callback_query(F.data == "post_schedule:set_reminder")
-async def set_reminder_mode(callback: types.CallbackQuery, state: FSMContext) -> None:
-    """
-    Выбор режима: только напоминание (без автопубликации).
-    """
-    await state.update_data(auto_publish=False)
-    await state.set_state(PostScheduleStates.publish_at_input)
-    await callback.answer()
-    await callback.message.edit_text(
-        "⏰ <b>Настройка напоминания</b>\n\n"
-        "Укажите дату и время публикации по Мск в формате:\n"
-        "<code>ДД.ММ.ГГГГ ЧЧ:ММ</code>\n\n"
-        "Например: <code>25.12.2025 10:30</code>.",
-        reply_markup=back_to_menu_keyboard(),
-    )
-
-
-@router.callback_query(F.data == "post_schedule:set_autopost")
-async def set_autopost_mode(callback: types.CallbackQuery, state: FSMContext) -> None:
-    """
-    Выбор режима: напоминание + автопубликация.
-    """
-    await state.update_data(auto_publish=True)
-    await state.set_state(PostScheduleStates.publish_at_input)
-    await callback.answer()
-    await callback.message.edit_text(
-        "📆 <b>Автопубликация поста</b>\n\n"
-        "Укажите дату и время публикации по Мск в формате:\n"
-        "<code>ДД.ММ.ГГГГ ЧЧ:ММ</code>\n\n"
-        "Например: <code>25.12.2025 10:30</code>.",
-        reply_markup=back_to_menu_keyboard(),
-    )
-
-
 @router.message(PostScheduleStates.publish_at_input, F.text)
 async def publish_at_input_handler(message: types.Message, state: FSMContext) -> None:
     """
@@ -163,15 +129,9 @@ async def content_with_photo_handler(message: types.Message, state: FSMContext) 
     await state.set_state(PostScheduleStates.confirmation)
 
     data = await state.get_data()
-    mode_text = (
-        "⏰ Напоминание без автопубликации"
-        if not data.get("auto_publish")
-        else "📆 Напоминание + автопубликация"
-    )
 
     await message.answer(
         "✅ <b>Проверьте настройки запланированного поста</b>\n\n"
-        f"<b>Режим:</b> {mode_text}\n"
         f"<b>Время публикации (по Мск):</b> {data.get('publish_at_local')}\n\n"
         "<b>Текст поста:</b>\n"
         f"{caption}",
@@ -185,12 +145,6 @@ async def content_text_handler(message: types.Message, state: FSMContext) -> Non
     Принимает текстовый пост без картинки.
     """
     text = message.text.strip()
-    if not text:
-        await message.answer(
-            "Пожалуйста, отправьте непустой текст поста.",
-            reply_markup=back_to_menu_keyboard(),
-        )
-        return
 
     await state.update_data(
         content_text=text,
@@ -199,15 +153,9 @@ async def content_text_handler(message: types.Message, state: FSMContext) -> Non
     await state.set_state(PostScheduleStates.confirmation)
 
     data = await state.get_data()
-    mode_text = (
-        "⏰ Напоминание без автопубликации"
-        if not data.get("auto_publish")
-        else "📆 Напоминание + автопубликация"
-    )
 
     await message.answer(
         "✅ <b>Проверьте настройки запланированного поста</b>\n\n"
-        f"<b>Режим:</b> {mode_text}\n"
         f"<b>Время публикации (по Мск):</b> {data.get('publish_at_local')}\n\n"
         "<b>Текст поста:</b>\n"
         f"{text}",
@@ -258,7 +206,6 @@ async def post_schedule_confirm(
     data = await state.get_data()
 
     publish_at_local = data.get("publish_at_local")
-    auto_publish = bool(data.get("auto_publish"))
     content_text = data.get("content_text")
     photo_file_id = data.get("photo_file_id")
 
@@ -300,7 +247,6 @@ async def post_schedule_confirm(
     schedule_input = PostScheduleInputSchema(
         publish_at=publish_at_local,
         remind_offset_minutes=remind_offset_minutes,
-        auto_publish=auto_publish,
     )
 
     service = PostScheduleService(session=session)
@@ -340,15 +286,8 @@ async def post_schedule_confirm(
 
     moscow_publish_at = _format_datetime_moscow(scheduled_post.publish_at)
 
-    mode_text = (
-        "⏰ Напоминание без автопубликации"
-        if not scheduled_post.auto_publish
-        else "📆 Напоминание + автопубликация"
-    )
-
     await callback.message.edit_text(
         "✅ <b>Пост успешно запланирован!</b>\n\n"
-        f"<b>Режим:</b> {mode_text}\n"
         f"<b>Публикация по Мск:</b> {moscow_publish_at}\n"
         f"<b>Напоминание за:</b> {scheduled_post.remind_offset_minutes} мин. до публикации\n\n"
         "Вернитесь в главное меню, чтобы запланировать ещё один пост или воспользоваться другими функциями бота.",
