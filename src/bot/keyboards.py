@@ -168,7 +168,7 @@ def text_generation_results_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="✏️ Изменить", callback_data="text_result:edit")
+        InlineKeyboardButton(text="✏️ Изменить текст", callback_data="text_result:edit")
     )
     builder.add(
         InlineKeyboardButton(

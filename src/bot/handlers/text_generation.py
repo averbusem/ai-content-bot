@@ -53,12 +53,17 @@ async def generate_post_with_image(
 
         await loading_msg.delete()
 
-        await state.update_data(post=post, has_image=True)
-
         await message.answer("✨ <b>Готово! Ваш пост:</b>")
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await message.answer_photo(photo=image_file, caption=post)
+        photo_message = await message.answer_photo(photo=image_file, caption=post)
+
+        image_file_id = photo_message.photo[-1].file_id if photo_message.photo else None
+        await state.update_data(
+            post=post,
+            has_image=True,
+            image_file_id=image_file_id,
+        )
 
         await track_user_operation(user_id)
 
@@ -169,9 +174,12 @@ async def text_result_change_image_handler(
         await loading_msg.delete()
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await callback.message.answer_photo(
+        photo_message = await callback.message.answer_photo(
             photo=image_file, caption="🖼 Новое изображение для вашего поста"
         )
+
+        image_file_id = photo_message.photo[-1].file_id if photo_message.photo else None
+        await state.update_data(image_file_id=image_file_id, has_image=True)
 
         await track_user_operation(user_id=callback.from_user.id)
 
@@ -204,6 +212,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
     edit_request = message.text.strip()
     data = await state.get_data()
     original_post = data.get("post", "")
+    image_file_id = data.get("image_file_id")
 
     if not original_post:
         return await message.answer(
@@ -222,10 +231,7 @@ async def editing_handler(message: types.Message, state: FSMContext):
             style="разговорный",
         )
 
-        await loading_msg.edit_text("⏳ Создаю новое изображение...")
-
-        image_bytes = await ai_manager.generate_image_from_post(post_text=updated_post)
-
+        await loading_msg.edit_text("✨ Сохраняю изменения...")
         await loading_msg.delete()
 
         await state.update_data(post=updated_post)
@@ -233,8 +239,21 @@ async def editing_handler(message: types.Message, state: FSMContext):
 
         await message.answer("✨ <b>Пост обновлён:</b>")
 
-        image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        await message.answer_photo(photo=image_file, caption=updated_post)
+        if image_file_id:
+            photo_message = await message.answer_photo(
+                photo=image_file_id, caption=updated_post
+            )
+            new_image_file_id = (
+                photo_message.photo[-1].file_id
+                if photo_message.photo
+                else image_file_id
+            )
+            await state.update_data(
+                image_file_id=new_image_file_id,
+                has_image=True,
+            )
+        else:
+            await message.answer(updated_post)
 
         await track_user_operation(user_id=user_id)
         return await message.answer(
