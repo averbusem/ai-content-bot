@@ -27,6 +27,11 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     )
     builder.add(
         InlineKeyboardButton(
+            text="⏳ Запланировать пост", callback_data="main_menu:schedule_post"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
             text="⚙️ Информация о НКО", callback_data="main_menu:nko_data"
         )
     )
@@ -683,6 +688,57 @@ def from_example_generation_results_keyboard() -> InlineKeyboardMarkup:
     )
     builder.add(
         InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def post_schedule_confirm_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура подтверждения настроек запланированного поста.
+    """
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="✅ Подтвердить", callback_data="post_schedule:confirm"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="❌ Отменить", callback_data="post_schedule:cancel")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def post_schedule_remind_offset_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура выбора интервала напоминания перед публикацией.
+    """
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="15 минут",
+            callback_data="post_schedule:remind_offset:15",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="30 минут",
+            callback_data="post_schedule:remind_offset:30",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="1 час",
+            callback_data="post_schedule:remind_offset:60",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)

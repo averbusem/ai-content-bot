@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import (
@@ -9,8 +9,10 @@ from sqlalchemy import (
     Text,
     JSON,
     ForeignKey,
+    Interval,
     func,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from src.db.database import Base
 
@@ -32,7 +34,7 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<User(telegram_id={self.telegram_id}, username={self.username})>"
 
 
@@ -58,6 +60,80 @@ class NKOData(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class Post(Base):
+    """
+    Запланированный или опубликованный пост с настройками напоминания.
+    """
+
+    __tablename__ = "posts"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False),
+        primary_key=True,
+        doc="UUID поста в строковом виде",
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.telegram_id", ondelete="CASCADE"),
+        index=True,
+        doc="Telegram ID пользователя, создавшего пост",
+    )
+    chat_id: Mapped[int] = mapped_column(
+        BigInteger,
+        doc="Чат, в который нужно опубликовать пост",
+    )
+    content: Mapped[dict] = mapped_column(
+        JSON,
+        doc=(
+            "Структура вида "
+            '{"text": str | None, '
+            '"media": [{"type": "photo|video|...", "file_id": str, "caption": str | None}]}'
+        ),
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="scheduled",
+        doc='Статус поста: "scheduled" | "published" | "cancelled"',
+    )
+
+    # Времена в UTC для планирования публикации и напоминаний
+    publish_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        doc="Момент публикации поста (UTC)",
+    )
+    remind_offset: Mapped[timedelta] = mapped_column(
+        Interval,
+        doc="Интервал до публикации, когда нужно отправить напоминание",
+    )
+    remind_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        doc="Время отправки напоминания (UTC)",
+    )
+
+    state: Mapped[str] = mapped_column(
+        String(32),
+        default="pending",
+        doc=('Состояние напоминания: "pending" | "reminded" | "published"'),
+    )
+
+    aps_job_id_remind: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="ID APScheduler-задачи для напоминания",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
 
