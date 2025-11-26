@@ -28,6 +28,9 @@ class TextGenerationStates(StatesGroup):
     free_text_input = State()
     waiting_results = State()
     editing = State()
+    adding_overlay = State()
+    adding_overlay_type = State()
+    adding_overlay_position = State()
 
 
 class TextGenerationStructStates(StatesGroup):
@@ -51,6 +54,9 @@ class TextGenerationStructStates(StatesGroup):
     image_overlay_font = State()
     waiting_results = State()
     editing = State()
+    adding_overlay = State()
+    adding_overlay_type = State()
+    adding_overlay_position = State()
 
 
 class TextEditorStates(StatesGroup):
@@ -75,6 +81,9 @@ class ImageGenerationStates(StatesGroup):
     upload_example = State()  # Загрузка примера
     example_prompt = State()  # Промпт по примеру
     waiting_results = State()
+    adding_overlay = State()
+    adding_overlay_type = State()
+    adding_overlay_position = State()
 
 
 class ContentPlanStates(StatesGroup):

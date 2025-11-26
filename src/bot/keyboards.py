@@ -198,7 +198,12 @@ def text_generation_results_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="✏️ Изменить", callback_data="text_result:edit")
+        InlineKeyboardButton(text="✏️ Изменить текст", callback_data="text_result:edit")
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="📎 Добавить фото/логотип", callback_data="text_result:add_overlay"
+        )
     )
     builder.add(
         InlineKeyboardButton(
@@ -490,6 +495,11 @@ def image_generation_results_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
+        InlineKeyboardButton(
+            text="📎 Добавить фото/логотип", callback_data="image_result:add_overlay"
+        )
+    )
+    builder.add(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="image_result:edit")
     )
     builder.add(
@@ -606,6 +616,57 @@ def overlay_font_keyboard(font_options: list[str]) -> InlineKeyboardMarkup:
         )
 
     builder.adjust(1)
+    return builder.as_markup()
+
+
+def image_attachment_type_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="🏷 Логотип / стикер", callback_data="image_asset:type:logo"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="🖼 Фото / иллюстрация", callback_data="image_asset:type:photo"
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="❌ Отмена", callback_data="image_asset:type:cancel")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def image_attachment_position_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.row(
+        InlineKeyboardButton(
+            text="↖️ Верхний левый", callback_data="image_asset:pos:top_left"
+        ),
+        InlineKeyboardButton(
+            text="↗️ Верхний правый", callback_data="image_asset:pos:top_right"
+        ),
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text="↙️ Нижний левый", callback_data="image_asset:pos:bottom_left"
+        ),
+        InlineKeyboardButton(
+            text="↘️ Нижний правый", callback_data="image_asset:pos:bottom_right"
+        ),
+    )
+    builder.add(
+        InlineKeyboardButton(text="⏺ По центру", callback_data="image_asset:pos:center")
+    )
+    builder.add(
+        InlineKeyboardButton(text="❌ Отмена", callback_data="image_asset:pos:cancel")
+    )
+
+    builder.adjust(2, 1, 1)
     return builder.as_markup()
 
 
