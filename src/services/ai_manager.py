@@ -1,9 +1,12 @@
 from typing import Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from .models.gigachat import GigaChatModel
 from .models.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
 from .image_generator import ImageGenerator
-from .nko_service import nko_service
+from .nko import NKOService
 from .text_overlay import TextOverlayConfig, TextOverlayService
 
 
@@ -19,19 +22,24 @@ class AIManager:
 
     # === МЕТОДЫ ДЛЯ РАБОТЫ С ТЕКСТОМ ===
 
+    async def _apply_ngo_context(self, session: AsyncSession, user_id: int) -> None:
+        nko_service = NKOService(session=session)
+        ngo_info = await nko_service.get_data(user_id)
+        if ngo_info:
+            self.content_generator.set_ngo_info(ngo_info)
+        else:
+            self.content_generator.ngo_info = None
+
     async def generate_free_text_post(
         self,
         user_id: int,
+        session: AsyncSession,
         user_idea: str,
         style: str = "разговорный",
         additional_info: Optional[str] = None,
     ) -> str:
         """Генерация свободного текста поста"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
+        await self._apply_ngo_context(session=session, user_id=user_id)
 
         return await self.content_generator.generate_free_text_post(
             user_idea=user_idea, style=style, additional_info=additional_info
@@ -40,6 +48,7 @@ class AIManager:
     async def generate_structured_post(
         self,
         user_id: int,
+        session: AsyncSession,
         event_type: str,
         date: str,
         location: str,
@@ -48,11 +57,7 @@ class AIManager:
         style: str = "разговорный",
     ) -> str:
         """Генерация структурированного поста"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
+        await self._apply_ngo_context(session=session, user_id=user_id)
 
         return await self.content_generator.generate_structured_post(
             event_type=event_type,
@@ -66,6 +71,7 @@ class AIManager:
     async def generate_structured_form_post(
         self,
         user_id: int,
+        session: AsyncSession,
         event: str,
         description: str,
         goal: str,
@@ -78,11 +84,7 @@ class AIManager:
         additional_info: Optional[str] = None,
     ) -> str:
         """Генерация поста на основе структурированной формы (10 вопросов)"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
+        await self._apply_ngo_context(session=session, user_id=user_id)
 
         return await self.content_generator.generate_structured_form_post(
             event=event,
@@ -100,30 +102,27 @@ class AIManager:
     async def generate_post_from_example(
         self,
         user_id: int,
+        session: AsyncSession,
         example_post: str,
         new_topic: str,
         style: Optional[str] = None,
     ) -> str:
         """Генерация поста на основе примера"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
+        await self._apply_ngo_context(session=session, user_id=user_id)
 
         return await self.content_generator.generate_post_from_example(
             example_post=example_post, new_topic=new_topic, style=style
         )
 
     async def edit_post(
-        self, user_id: int, original_post: str, edit_request: str
+        self,
+        user_id: int,
+        session: AsyncSession,
+        original_post: str,
+        edit_request: str,
     ) -> tuple[str, list[str], list[str]]:
         """Редактирование поста на основе запроса пользователя"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
+        await self._apply_ngo_context(session=session, user_id=user_id)
         return await self.content_generator.edit_post(
             original_post=original_post, edit_request=edit_request
         )
@@ -131,16 +130,13 @@ class AIManager:
     async def generate_content_plan(
         self,
         user_id: int,
+        session: AsyncSession,
         duration_days: int,
         posts_per_week: int,
         preferences: Optional[str] = None,
     ) -> str:
         """Создание контент-плана"""
-        ngo_info = await nko_service.get_nko_data(user_id)
-        if ngo_info:
-            self.content_generator.set_ngo_info(ngo_info)
-        else:
-            self.content_generator.ngo_info = None
+        await self._apply_ngo_context(session=session, user_id=user_id)
 
         return await self.content_generator.generate_content_plan(
             duration_days=duration_days,

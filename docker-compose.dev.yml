@@ -1,4 +1,18 @@
 services:
+  db:
+    image: postgres:18
+    container_name: db_dev
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql
+
   redis:
     image: redis:8.0.2
     container_name: redis_dev
@@ -19,4 +33,5 @@ services:
       retries: 5
 
 volumes:
+  db_data:
   redis_dev_data:

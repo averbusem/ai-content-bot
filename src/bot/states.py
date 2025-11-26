@@ -5,6 +5,13 @@ class MainMenuStates(StatesGroup):
     main_menu = State()
 
 
+class AdminMenuStates(StatesGroup):
+    main_menu = State()
+    user_management = State()
+    approve_user = State()
+    block_user = State()
+
+
 class NKODataStates(StatesGroup):
     nko_menu = State()
     name = State()
@@ -12,7 +19,8 @@ class NKODataStates(StatesGroup):
     forms = State()
     forms_other = State()
     region = State()
-    contacts = State()
+    email = State()
+    website = State()
 
 
 class TextGenerationStates(StatesGroup):

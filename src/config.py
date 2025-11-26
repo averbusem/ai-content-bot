@@ -12,6 +12,21 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     BOT_TOKEN: str = ""
+    ADMIN_ID: int
+
+    DB_HOST: str = ""
+    DB_PORT: str = ""
+    DB_USER: str = ""
+    DB_PASS: str = ""
+    DB_NAME: str = ""
+
+    @property
+    def DATABASE_URL(self):
+        url = (
+            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@"
+            f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+        return url
 
     REDIS_HOST: str = ""
     REDIS_PORT: str = ""

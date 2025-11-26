@@ -1,12 +1,25 @@
-from aiogram import types, Router, F
+from contextlib import suppress
+
+from aiogram import F, Router, types
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.bot_decorators import track_user_operation
 from src.bot.keyboards import back_to_menu_keyboard, main_menu_keyboard
-from src.services.ai_manager import ai_manager
 from src.bot.states import ContentPlanStates
+from src.services.ai_manager import ai_manager
+from src.utils.telegram_html import sanitize_telegram_html
 
 router = Router()
+
+
+async def _safe_delete_message(message: types.Message | None) -> None:
+    """Удаляет сообщение, игнорируя ошибки телеграма."""
+    if message is None:
+        return
+    with suppress(TelegramBadRequest):
+        await message.delete()
 
 
 @router.message(ContentPlanStates.duration_input, F.text)
@@ -105,7 +118,9 @@ async def frequency_invalid_handler(message: types.Message):
 
 
 @router.message(ContentPlanStates.preferences_input, F.text)
-async def preferences_input_handler(message: types.Message, state: FSMContext):
+async def preferences_input_handler(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     preferences_text = message.text.strip()
 
     preferences = (
@@ -127,12 +142,13 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
     try:
         plan = await ai_manager.generate_content_plan(
             user_id=user_id,
+            session=session,
             duration_days=duration_days,
             posts_per_week=posts_per_week,
             preferences=preferences,
         )
 
-        await loading_msg.delete()
+        await _safe_delete_message(loading_msg)
 
         await state.update_data(content_plan=plan)
 
@@ -143,7 +159,8 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
             + (f"💡 Предпочтения: {preferences}\n" if preferences else "")
         )
 
-        await message.answer(f"<b>📋 КОНТЕНТ-ПЛАН:</b>\n\n{plan}")
+        safe_plan = sanitize_telegram_html(plan)
+        await message.answer(f"<b>📋 КОНТЕНТ-ПЛАН:</b>\n\n{safe_plan}")
 
         await state.clear()
 
@@ -154,7 +171,7 @@ async def preferences_input_handler(message: types.Message, state: FSMContext):
         )
 
     except Exception:
-        await loading_msg.delete()
+        await _safe_delete_message(loading_msg)
         await state.clear()
         return await message.answer(
             "❌ Произошла ошибка при создании контент-плана:\n"
