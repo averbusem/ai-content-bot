@@ -39,7 +39,7 @@ async def _check_admin(callback_or_message, is_admin: bool) -> bool:
 
 def _format_user_line(user: User) -> str:
     username = user.username or "без username"
-    return f"{user.telegram_id} — {username}"
+    return f"<code>{user.telegram_id}</code> — <code>@{username}</code>"
 
 
 def _split_identifier(value: str) -> tuple[Optional[int], Optional[str]]:
