@@ -14,7 +14,6 @@ from src.bot.middlewares import (
     RemoveLastKeyboardMiddleware,
     UserAccessMiddleware,
     GroupChatAccessMiddleware,
-
 )
 from src.config import settings
 from src.services.rate_limiter import rate_limiter
@@ -45,7 +44,6 @@ dp.message.middleware(GroupChatAccessMiddleware(storage=storage))
 dp.callback_query.middleware(GroupChatAccessMiddleware(storage=storage))
 
 
-
 dp.include_router(get_handlers_router())
 
 
@@ -70,7 +68,6 @@ async def setup_bot():
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Перезапустить бота"),
-            BotCommand(command="use", description="Стать инициатором в групповом чате"),
         ]
     )
     await bot.delete_webhook(drop_pending_updates=True)
