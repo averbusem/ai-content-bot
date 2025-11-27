@@ -53,7 +53,7 @@ def admin_user_management_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="⛔ Заблокировать", callback_data="admin_menu:block")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -75,7 +75,7 @@ def back_to_menu_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     return builder.as_markup()
@@ -90,7 +90,7 @@ def nko_data_empty_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -111,7 +111,7 @@ def nko_data_exists_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -150,7 +150,7 @@ def nko_forms_keyboard(selected_forms: list = None) -> InlineKeyboardMarkup:
         )
 
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     return builder.as_markup()
@@ -163,7 +163,7 @@ def nko_skip_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="⏭️ Пропустить", callback_data="nko_skip:skip")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -187,7 +187,7 @@ def text_generation_method_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="📝 По примеру", callback_data="text_gen:example")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -196,12 +196,6 @@ def text_generation_method_keyboard() -> InlineKeyboardMarkup:
 
 def text_generation_results_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-
-    builder.add(
-        InlineKeyboardButton(
-            text="✅ Всё отлично, спасибо!", callback_data="text_result:ok"
-        )
-    )
     builder.add(
         InlineKeyboardButton(text="✏️ Изменить текст", callback_data="text_result:edit")
     )
@@ -216,7 +210,7 @@ def text_generation_results_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -227,15 +221,10 @@ def text_redactor_results_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     builder.add(
-        InlineKeyboardButton(
-            text="✅ Всё отлично, спасибо!", callback_data="text_editor:ok"
-        )
-    )
-    builder.add(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="text_editor:edit")
     )
     builder.add(
-        InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -249,7 +238,7 @@ def struct_form_start_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="▶️ Начать", callback_data="struct_form:start")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -287,7 +276,7 @@ def struct_form_goal_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="✏️ Другое", callback_data="struct_goal:other")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(2)
@@ -311,7 +300,7 @@ def struct_form_platform_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -346,7 +335,7 @@ def struct_form_audience_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(2)
@@ -374,7 +363,7 @@ def struct_form_style_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(2)
@@ -394,7 +383,7 @@ def struct_form_length_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="📚 Подробно", callback_data="struct_length:long")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -408,7 +397,7 @@ def struct_form_skip_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="⏭️ Пропустить", callback_data="struct_skip:skip")
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -442,7 +431,7 @@ def image_style_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -481,7 +470,7 @@ def image_colors_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -491,9 +480,6 @@ def image_colors_keyboard() -> InlineKeyboardMarkup:
 def image_generation_results_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
-    builder.add(
-        InlineKeyboardButton(text="✅ Всё отлично", callback_data="image_result:ok")
-    )
     builder.add(
         InlineKeyboardButton(
             text="🔄 Перегенерировать", callback_data="image_result:regenerate"
@@ -508,7 +494,7 @@ def image_generation_results_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="✏️ Изменить", callback_data="image_result:edit")
     )
     builder.add(
-        InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -528,7 +514,7 @@ def image_mode_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="📋 По примеру", callback_data="image_mode:example")
     )
     builder.add(
-        InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -553,7 +539,7 @@ def overlay_mode_keyboard(include_auto: bool = False) -> InlineKeyboardMarkup:
             )
         )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -679,15 +665,10 @@ def from_example_generation_results_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     builder.add(
-        InlineKeyboardButton(
-            text="✅ Всё отлично, спасибо!", callback_data="example_result:ok"
-        )
-    )
-    builder.add(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="example_result:edit")
     )
     builder.add(
-        InlineKeyboardButton(text="🏠 В главное меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)
@@ -738,7 +719,7 @@ def post_schedule_remind_offset_keyboard() -> InlineKeyboardMarkup:
         )
     )
     builder.add(
-        InlineKeyboardButton(text="🔙 Назад в меню", callback_data="main_menu:back")
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
     )
 
     builder.adjust(1)

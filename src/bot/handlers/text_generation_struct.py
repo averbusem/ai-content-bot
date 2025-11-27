@@ -7,7 +7,6 @@ from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
     back_to_menu_keyboard,
     text_generation_results_keyboard,
-    main_menu_keyboard,
     struct_form_start_keyboard,
     struct_form_goal_keyboard,
     struct_form_platform_keyboard,
@@ -22,7 +21,7 @@ from src.bot.keyboards import (
     image_attachment_type_keyboard,
     image_attachment_position_keyboard,
 )
-from src.bot.states import TextGenerationStructStates, MainMenuStates
+from src.bot.states import TextGenerationStructStates
 from src.services.text_overlay import TextOverlayConfig
 from src.services.ai_manager import ai_manager
 from src.bot.handlers.utils.image_overlay import build_image_with_overlay
@@ -789,15 +788,6 @@ async def struct_overlay_font_handler(
 
 
 # Обработка результатов
-@router.callback_query(
-    F.data == "text_result:ok", TextGenerationStructStates.waiting_results
-)
-async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(MainMenuStates.main_menu)
-    await callback.answer("Рад был помочь! 🎉")
-    return await callback.message.answer(
-        "👋 Главное меню", reply_markup=main_menu_keyboard()
-    )
 
 
 @router.callback_query(

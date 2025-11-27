@@ -10,7 +10,6 @@ from src.bot.keyboards import (
     image_style_keyboard,
     image_colors_keyboard,
     image_generation_results_keyboard,
-    main_menu_keyboard,
     image_mode_keyboard,
     overlay_mode_keyboard,
     overlay_position_keyboard,
@@ -19,7 +18,7 @@ from src.bot.keyboards import (
     image_attachment_type_keyboard,
     image_attachment_position_keyboard,
 )
-from src.bot.states import ImageGenerationStates, MainMenuStates
+from src.bot.states import ImageGenerationStates
 from src.services.text_overlay import TextOverlayConfig
 from src.services.ai_manager import ai_manager
 from src.bot.handlers.utils.image_overlay import build_image_with_overlay
@@ -735,16 +734,6 @@ async def image_overlay_font_handler(callback: types.CallbackQuery, state: FSMCo
 # ============================================================================
 # ОБРАБОТКА РЕЗУЛЬТАТОВ
 # ============================================================================
-
-
-@router.callback_query(F.data == "image_result:ok")
-async def image_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    """Handler для кнопки 'Всё отлично' после создания изображения"""
-    await state.set_state(MainMenuStates.main_menu)
-    await callback.answer("Рад был помочь! 🎉")
-    return await callback.message.answer(
-        "👋 Главное меню", reply_markup=main_menu_keyboard()
-    )
 
 
 @router.callback_query(F.data == "image_result:regenerate")

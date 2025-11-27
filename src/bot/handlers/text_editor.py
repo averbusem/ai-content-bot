@@ -4,10 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.keyboards import (
     back_to_menu_keyboard,
-    main_menu_keyboard,
     text_redactor_results_keyboard,
 )
-from src.bot.states import TextEditorStates, MainMenuStates
+from src.bot.states import TextEditorStates
 from src.services.ai_manager import ai_manager
 from src.bot.bot_decorators import check_user_limit, track_user_operation
 
@@ -98,15 +97,6 @@ async def edit_request_handler(
 
     return await message.answer(
         "Выберите действие", reply_markup=text_redactor_results_keyboard()
-    )
-
-
-@router.callback_query(F.data == "text_editor:ok")
-async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(MainMenuStates.main_menu)
-    await callback.answer("Рад был помочь! 🎉")
-    return await callback.message.edit_text(
-        "👋 Главное меню", reply_markup=main_menu_keyboard()
     )
 
 

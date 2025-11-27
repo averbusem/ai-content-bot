@@ -9,11 +9,10 @@ from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
     back_to_menu_keyboard,
     text_generation_results_keyboard,
-    main_menu_keyboard,
     image_attachment_type_keyboard,
     image_attachment_position_keyboard,
 )
-from src.bot.states import TextGenerationStates, MainMenuStates
+from src.bot.states import TextGenerationStates
 from src.services.ai_manager import ai_manager
 from src.bot.handlers.utils.image_overlay import build_image_with_overlay
 from src.services.service_decorators import TextLengthLimitError
@@ -190,16 +189,6 @@ async def free_text_invalid_handler(message: types.Message, state: FSMContext):
     return await message.answer(
         "Пожалуйста, отправьте текстовое сообщение или голосовое сообщение с описанием.",
         reply_markup=back_to_menu_keyboard(),
-    )
-
-
-@router.callback_query(F.data == "text_result:ok")
-async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    await state.clear()
-    await state.set_state(MainMenuStates.main_menu)
-    await callback.answer("Рад был помочь! 🎉")
-    return await callback.message.answer(
-        "👋 Главное меню", reply_markup=main_menu_keyboard()
     )
 
 

@@ -5,10 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.bot.bot_decorators import check_user_limit, track_user_operation
 from src.bot.keyboards import (
     back_to_menu_keyboard,
-    main_menu_keyboard,
     from_example_generation_results_keyboard,
 )
-from src.bot.states import TextGenerationFromExampleStates, MainMenuStates
+from src.bot.states import TextGenerationFromExampleStates
 from src.services.ai_manager import ai_manager
 from src.services.service_decorators import TextLengthLimitError
 
@@ -236,16 +235,6 @@ async def generate_post_from_example(
             "❌ Произошла ошибка. Попробуйте позже",
             reply_markup=back_to_menu_keyboard(),
         )
-
-
-@router.callback_query(F.data == "example_result:ok")
-async def text_result_ok_handler(callback: types.CallbackQuery, state: FSMContext):
-    await state.clear()
-    await state.set_state(MainMenuStates.main_menu)
-    await callback.answer("Рад был помочь! 🎉")
-    return await callback.message.answer(
-        "👋 Главное меню", reply_markup=main_menu_keyboard()
-    )
 
 
 @router.callback_query(F.data == "example_result:edit")
