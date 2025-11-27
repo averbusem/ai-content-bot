@@ -171,15 +171,18 @@ class UserAccessMiddleware(BaseMiddleware):
 
     async def _respond(self, event: TelegramObject, text: str):
         if isinstance(event, CallbackQuery):
-            try:
-                await event.answer()
-            except TelegramBadRequest:
-                pass
-            if event.message:
-                return await event.message.answer(text)
-            return await self.bot.send_message(chat_id=event.from_user.id, text=text)
+            await event.answer(text, show_alert=True)
+            return None
         if isinstance(event, Message):
-            return await event.answer(text)
+            answer_msg = await event.answer(text)
+            import asyncio
+
+            asyncio.create_task(
+                self._delete_message_after_delay(
+                    event.bot, event.chat.id, answer_msg.message_id, delay=3
+                )
+            )
+            return answer_msg
         return None
 
     @staticmethod
@@ -189,6 +192,18 @@ class UserAccessMiddleware(BaseMiddleware):
         if isinstance(event, CallbackQuery):
             return event.from_user
         return None
+
+    async def _delete_message_after_delay(
+        self, bot: Bot, chat_id: int, message_id: int, delay: int
+    ):
+        """Удаляет сообщение через указанное количество секунд"""
+        import asyncio
+
+        await asyncio.sleep(delay)
+        try:
+            await bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except Exception as e:
+            logger.debug(f"Не удалось удалить сообщение {chat_id}:{message_id}: {e}")
 
 
 class RemoveLastKeyboardMiddleware(BaseMiddleware):
@@ -305,10 +320,10 @@ class GroupChatAccessMiddleware(BaseMiddleware):
         is_start_command = (
             isinstance(event, types.Message)
             and event.text
-            and event.text.startswith("/use")
+            and event.text.startswith("/start")
         )
 
-        # Если это команда /use, проверяем, есть ли активный процесс у текущего инициатора
+        # Если это команда /start, проверяем, есть ли активный процесс у текущего инициатора
         if (
             is_start_command
             and initiator_user_id is not None
@@ -343,14 +358,14 @@ class GroupChatAccessMiddleware(BaseMiddleware):
 
                             asyncio.create_task(
                                 self._delete_message_after_delay(
-                                    event.bot, chat_id, answer_msg.message_id, delay=5
+                                    event.bot, chat_id, answer_msg.message_id, delay=3
                                 )
                             )
                         return None
                 except Exception as e:
                     logger.warning(f"Ошибка при проверке состояния инициатора: {e}")
 
-        # Если это команда /use или инициатор еще не установлен, устанавливаем текущего пользователя как инициатора
+        # Если это команда /start или инициатор еще не установлен, устанавливаем текущего пользователя как инициатора
         if is_start_command or initiator_user_id is None:
             await rate_limiter.redis_client.set(initiator_key, str(user_id))
             await rate_limiter.redis_client.expire(initiator_key, 180)
