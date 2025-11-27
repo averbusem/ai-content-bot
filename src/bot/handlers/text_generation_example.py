@@ -9,6 +9,7 @@ from src.bot.keyboards import (
 )
 from src.bot.states import TextGenerationFromExampleStates
 from src.services.ai_manager import ai_manager
+from src.bot.handlers.utils.text_formatter import markdown_to_html
 from src.services.service_decorators import TextLengthLimitError
 
 router = Router()
@@ -212,7 +213,7 @@ async def generate_post_from_example(
         await state.update_data(post=post, has_image=False)
 
         await message.answer("✨ <b>Готово! Ваш пост в стиле примера:</b>")
-        await message.answer(f"{post}")
+        await message.answer(markdown_to_html(post))
 
         await track_user_operation(user_id)
 
@@ -275,18 +276,18 @@ async def editing_handler(
     loading_msg = await message.answer("⏳ Обновляю пост...")
 
     try:
-        updated_post = await ai_manager.edit_post(
+        edited_text, errors, recommendations = await ai_manager.edit_post(
             user_id=user_id,
             session=session,
             original_post=original_post,
             edit_request=edit_request,
         )
 
-        await state.update_data(post=updated_post)
+        await state.update_data(post=edited_text)
         await state.set_state(TextGenerationFromExampleStates.waiting_results)
 
         await message.answer("✨ <b>Пост обновлён:</b>")
-        await message.answer(f"{updated_post}")
+        await message.answer(markdown_to_html(edited_text))
 
         await track_user_operation(user_id)
 

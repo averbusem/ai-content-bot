@@ -25,6 +25,7 @@ from src.bot.states import TextGenerationStructStates
 from src.services.text_overlay import TextOverlayConfig
 from src.services.ai_manager import ai_manager
 from src.bot.handlers.utils.image_overlay import build_image_with_overlay
+from src.bot.handlers.utils.text_formatter import markdown_to_html
 from src.services.service_decorators import TextLengthLimitError
 
 router = Router()
@@ -564,7 +565,7 @@ async def generate_struct_post_with_image(
 
             image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
             photo_message = await callback_or_message.message.answer_photo(
-                photo=image_file, caption=post
+                photo=image_file, caption=markdown_to_html(post)
             )
             image_file_id = (
                 photo_message.photo[-1].file_id if photo_message.photo else None
@@ -581,7 +582,7 @@ async def generate_struct_post_with_image(
 
             image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
             photo_message = await callback_or_message.answer_photo(
-                photo=image_file, caption=post
+                photo=image_file, caption=markdown_to_html(post)
             )
             image_file_id = (
                 photo_message.photo[-1].file_id if photo_message.photo else None
@@ -816,7 +817,7 @@ async def text_result_change_image_handler(
         # Отправляем новое изображение
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
         photo_message = await callback.message.answer_photo(
-            photo=image_file, caption=post
+            photo=image_file, caption=markdown_to_html(post)
         )
         image_file_id = photo_message.photo[-1].file_id if photo_message.photo else None
         await state.update_data(image_file_id=image_file_id, has_image=True)
@@ -982,7 +983,7 @@ async def struct_overlay_image_position_handler(
             photo=BufferedInputFile(
                 merged_bytes, filename="struct_post_image_with_overlay.png"
             ),
-            caption=post_text,
+            caption=markdown_to_html(post_text),
         )
 
         new_file_id = (
@@ -1083,11 +1084,11 @@ async def editing_handler(
         await state.set_state(TextGenerationStructStates.waiting_results)
 
         await message.answer("✨ <b>Пост обновлён:</b>")
-        await message.answer(f"{updated_post}")
+        await message.answer(markdown_to_html(updated_post))
 
         if image_file_id:
             photo_message = await message.answer_photo(
-                photo=image_file_id, caption=updated_post
+                photo=image_file_id, caption=markdown_to_html(updated_post)
             )
             new_image_file_id = (
                 photo_message.photo[-1].file_id
