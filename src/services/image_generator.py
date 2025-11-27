@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .models.gigachat import GigaChatModel
+from src.clients.gigachat import GigaChatModel
 from .text_overlay import TextOverlayConfig, TextOverlayService
 
 IMAGE_GENERATION_SYSTEM_PROMPT = """ПРАВИЛА КОМПОЗИЦИИ:
@@ -51,7 +51,7 @@ class ImageGenerator:
     def __init__(
         self,
         gigachat_model: GigaChatModel,
-        text_overlay_service: Optional[TextOverlayService] = None
+        text_overlay_service: Optional[TextOverlayService] = None,
     ):
         self.model = gigachat_model
         self.text_overlay = text_overlay_service
@@ -124,13 +124,13 @@ class ImageGenerator:
         )
 
     async def generate_image(
-            self,
-            prompt: str,
-            width: int = 1024,
-            height: int = 1024,
-            overlay_text: Optional[str] = None,
-            overlay_font: Optional[str] = None,
-            overlay_config: Optional[TextOverlayConfig] = None
+        self,
+        prompt: str,
+        width: int = 1024,
+        height: int = 1024,
+        overlay_text: Optional[str] = None,
+        overlay_font: Optional[str] = None,
+        overlay_config: Optional[TextOverlayConfig] = None,
     ) -> bytes:
         """
         Генерация изображения по промпту (БЕЗ исходного изображения)
@@ -154,10 +154,7 @@ class ImageGenerator:
             height=height,
         )
         return self._apply_overlay_if_needed(
-            base_image,
-            overlay_text,
-            overlay_font,
-            overlay_config
+            base_image, overlay_text, overlay_font, overlay_config
         )
 
     async def generate_image_from_params(
@@ -185,15 +182,15 @@ class ImageGenerator:
         return await self.generate_image(prompt, width, height)
 
     async def generate_image_from_post(
-            self,
-            post_text: str,
-            image_description: Optional[str] = None,
-            width: int = 1024,
-            height: int = 1024,
-            include_info_block: bool = False,
-            prepared_info_text: Optional[str] = None,
-            overlay_font: Optional[str] = None,
-            overlay_config: Optional[TextOverlayConfig] = None
+        self,
+        post_text: str,
+        image_description: Optional[str] = None,
+        width: int = 1024,
+        height: int = 1024,
+        include_info_block: bool = False,
+        prepared_info_text: Optional[str] = None,
+        overlay_font: Optional[str] = None,
+        overlay_config: Optional[TextOverlayConfig] = None,
     ) -> bytes:
         """
         Генерация изображения на основе текста поста
@@ -213,15 +210,11 @@ class ImageGenerator:
         overlay_text = prepared_info_text
         if include_info_block:
             overlay_text = overlay_text or await self.generate_information_text(
-                post_text=post_text,
-                image_description=image_description
+                post_text=post_text, image_description=image_description
             )
 
         return self._apply_overlay_if_needed(
-            image_bytes,
-            overlay_text,
-            overlay_font,
-            overlay_config
+            image_bytes, overlay_text, overlay_font, overlay_config
         )
 
     async def edit_image(
@@ -283,9 +276,7 @@ class ImageGenerator:
         )
 
     async def generate_information_text(
-            self,
-            post_text: str,
-            image_description: Optional[str] = None
+        self, post_text: str, image_description: Optional[str] = None
     ) -> str:
         """
         Генерация информационного блока для афиши/постера.
@@ -312,16 +303,16 @@ class ImageGenerator:
             prompt=prompt,
             system_prompt=INFO_TEXT_SYSTEM_PROMPT,
             temperature=0.4,
-            max_tokens=400
+            max_tokens=400,
         )
         return result.strip()
 
     def _apply_overlay_if_needed(
-            self,
-            image_bytes: bytes,
-            overlay_text: Optional[str],
-            overlay_font: Optional[str],
-            overlay_config: Optional[TextOverlayConfig]
+        self,
+        image_bytes: bytes,
+        overlay_text: Optional[str],
+        overlay_font: Optional[str],
+        overlay_config: Optional[TextOverlayConfig],
     ) -> bytes:
         if not overlay_text or not overlay_text.strip():
             return image_bytes
@@ -333,7 +324,7 @@ class ImageGenerator:
             image_bytes=image_bytes,
             text=overlay_text,
             font_variant=overlay_font,
-            config=overlay_config
+            config=overlay_config,
         )
 
     async def create_from_example(

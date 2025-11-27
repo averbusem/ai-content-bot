@@ -21,8 +21,9 @@ class SaluteSpeechModel:
         self.access_token: Optional[str] = None
         self.token_expires_at: float = 0
 
-        project_root = Path(__file__).parent.parent.parent
-        self.cert_path = project_root / "certificates" / "russian_trusted_root_ca.cer"
+        src_root = Path(__file__).resolve().parent.parent
+        certificates_dir = src_root / "assets" / "certificates"
+        self.cert_path = certificates_dir / "russian_trusted_root_ca.cer"
 
         self.ssl_context = self._create_ssl_context()
 

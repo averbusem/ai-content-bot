@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TextOverlayConfig:
     """Настройки отображения текста поверх изображения."""
+
     position: str = "bottom"
     max_width_ratio: float = 0.7
     padding_ratio: float = 0.05
@@ -28,22 +29,28 @@ class TextOverlayConfig:
 
 class TextOverlayService:
     """Сервис для нанесения текста на изображение с поддержкой кириллицы."""
+
     def __init__(self, font_candidates: Optional[Sequence[str]] = None):
         self._resolved_fonts = self._discover_fonts(font_candidates)
         if not self._resolved_fonts:
             raise RuntimeError(
                 "Не найдено ни одного рабочего шрифта с поддержкой кириллицы. "
-                "Убедитесь, что папка services/fonts/ содержит .ttf файлы или установлены системные шрифты."
+                "Убедитесь, что папка assets/fonts/ содержит .ttf файлы или установлены системные шрифты."
             )
 
-    def _discover_fonts(self, custom_candidates: Optional[Sequence[str]]) -> Dict[str, str]:
+    def _discover_fonts(
+        self, custom_candidates: Optional[Sequence[str]]
+    ) -> Dict[str, str]:
         """Ищет доступные шрифты в проекте и системе."""
         candidates = []
 
-        fonts_dir = Path(__file__).parent / "fonts"
-        if fonts_dir.exists() and fonts_dir.is_dir():
-            candidates.extend(str(p) for p in fonts_dir.glob("*.ttf"))
-            candidates.extend(str(p) for p in fonts_dir.glob("*.ttc"))
+        local_fonts_dir = Path(__file__).parent / "fonts"
+        assets_fonts_dir = Path(__file__).parent.parent / "assets" / "fonts"
+
+        for fonts_dir in (local_fonts_dir, assets_fonts_dir):
+            if fonts_dir.exists() and fonts_dir.is_dir():
+                candidates.extend(str(p) for p in fonts_dir.glob("*.ttf"))
+                candidates.extend(str(p) for p in fonts_dir.glob("*.ttc"))
 
         if custom_candidates:
             candidates.extend(custom_candidates)
@@ -67,9 +74,7 @@ class TextOverlayService:
         return list(self._resolved_fonts.keys())
 
     def _get_font(
-            self,
-            size: int,
-            font_variant: Optional[str] = None
+        self, size: int, font_variant: Optional[str] = None
     ) -> ImageFont.FreeTypeFont:
         """Загружает шрифт нужного размера."""
         if font_variant:
@@ -83,11 +88,11 @@ class TextOverlayService:
         return ImageFont.truetype(path, size=size)
 
     def _wrap_text(
-            self,
-            text: str,
-            draw: ImageDraw.ImageDraw,
-            font: ImageFont.FreeTypeFont,
-            max_width: int
+        self,
+        text: str,
+        draw: ImageDraw.ImageDraw,
+        font: ImageFont.FreeTypeFont,
+        max_width: int,
     ) -> List[str]:
         """Разбивает текст на строки по ширине."""
         lines = []
@@ -114,11 +119,11 @@ class TextOverlayService:
         return lines
 
     def apply_text(
-            self,
-            image_bytes: bytes,
-            text: str,
-            font_variant: Optional[str] = None,
-            config: Optional[TextOverlayConfig] = None,
+        self,
+        image_bytes: bytes,
+        text: str,
+        font_variant: Optional[str] = None,
+        config: Optional[TextOverlayConfig] = None,
     ) -> bytes:
         """
         Добавляет текст на изображение.
@@ -156,13 +161,17 @@ class TextOverlayService:
 
         # Расчёт размеров текстового блока
         line_heights = [
-            draw.textbbox((0, 0), line or " ", font=font)[3] -
-            draw.textbbox((0, 0), line or " ", font=font)[1]
+            draw.textbbox((0, 0), line or " ", font=font)[3]
+            - draw.textbbox((0, 0), line or " ", font=font)[1]
             for line in lines
         ]
-        spacing = int(line_heights[0] * max(cfg.line_spacing - 1.0, 0)) if line_heights else 0
+        spacing = (
+            int(line_heights[0] * max(cfg.line_spacing - 1.0, 0)) if line_heights else 0
+        )
         text_height = sum(line_heights) + spacing * max(len(lines) - 1, 0)
-        text_width = max((draw.textlength(line, font=font) for line in lines if line), default=0)
+        text_width = max(
+            (draw.textlength(line, font=font) for line in lines if line), default=0
+        )
 
         # Масштабирование для коротких текстов
         coverage = text_width / max_text_width if max_text_width else 1
@@ -172,13 +181,19 @@ class TextOverlayService:
             lines = self._wrap_text(text, draw, font, max_text_width)
 
             line_heights = [
-                draw.textbbox((0, 0), line or " ", font=font)[3] -
-                draw.textbbox((0, 0), line or " ", font=font)[1]
+                draw.textbbox((0, 0), line or " ", font=font)[3]
+                - draw.textbbox((0, 0), line or " ", font=font)[1]
                 for line in lines
             ]
-            spacing = int(line_heights[0] * max(cfg.line_spacing - 1.0, 0)) if line_heights else 0
+            spacing = (
+                int(line_heights[0] * max(cfg.line_spacing - 1.0, 0))
+                if line_heights
+                else 0
+            )
             text_height = sum(line_heights) + spacing * max(len(lines) - 1, 0)
-            text_width = max((draw.textlength(line, font=font) for line in lines if line), default=0)
+            text_width = max(
+                (draw.textlength(line, font=font) for line in lines if line), default=0
+            )
 
         # Размеры и позиция блока
         extra_width = int(text_width * cfg.background_expand_ratio)

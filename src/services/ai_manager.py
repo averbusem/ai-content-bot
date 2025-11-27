@@ -2,8 +2,8 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models.gigachat import GigaChatModel
-from .models.salute import SaluteSpeechModel
+from src.clients.gigachat import GigaChatModel
+from src.clients.salute import SaluteSpeechModel
 from .content_generator import ContentGenerator
 from .image_generator import ImageGenerator
 from .nko import NKOService

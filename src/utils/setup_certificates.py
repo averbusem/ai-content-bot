@@ -12,7 +12,8 @@ GIGACHAT_CERT_URL = "https://gu-st.ru/content/lending/russian_trusted_root_ca_pe
 SALUTE_CERT_URL = "https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer"
 
 PROJECT_ROOT = Path(__file__).parent.parent
-CERT_DIR = PROJECT_ROOT / "certificates"
+ASSETS_DIR = PROJECT_ROOT / "assets"
+CERT_DIR = ASSETS_DIR / "certificates"
 GIGACHAT_CERT_PATH = CERT_DIR / "russian_trusted_root_ca_pem.crt"
 SALUTE_CERT_PATH = CERT_DIR / "russian_trusted_root_ca.cer"
 

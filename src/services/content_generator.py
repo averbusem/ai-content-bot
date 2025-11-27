@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from .models.gigachat import GigaChatModel
+from src.clients.gigachat import GigaChatModel
 
 
 class ContentGenerator:
