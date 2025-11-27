@@ -9,6 +9,7 @@ from src.bot.keyboards import (
 from src.bot.states import TextEditorStates
 from src.services.ai_manager import ai_manager
 from src.bot.bot_decorators import check_user_limit, track_user_operation
+from src.bot.handlers.utils.text_formatter import markdown_to_html
 
 router = Router()
 
@@ -73,7 +74,7 @@ async def edit_request_handler(
 
     # Отправляем исправленный текст
     await message.answer("✨ <b>Исправленный текст:</b>")
-    await message.answer(f"{edited_text}")
+    await message.answer(markdown_to_html(edited_text))
 
     await track_user_operation(user_id)
 
@@ -156,7 +157,7 @@ async def editing_handler(
     await state.update_data(post=edited_text)
 
     await message.answer("✨ <b>Исправленный текст:</b>")
-    await message.answer(f"{edited_text}")
+    await message.answer(markdown_to_html(edited_text))
 
     await track_user_operation(user_id)
 

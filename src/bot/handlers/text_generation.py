@@ -15,6 +15,7 @@ from src.bot.keyboards import (
 from src.bot.states import TextGenerationStates
 from src.services.ai_manager import ai_manager
 from src.bot.handlers.utils.image_overlay import build_image_with_overlay
+from src.bot.handlers.utils.text_formatter import markdown_to_html
 from src.services.service_decorators import TextLengthLimitError
 
 router = Router()
@@ -82,7 +83,9 @@ async def generate_post_with_image(
         await message.answer("✨ <b>Готово! Ваш пост:</b>")
 
         image_file = BufferedInputFile(image_bytes, filename="post_image.jpg")
-        photo_message = await message.answer_photo(photo=image_file, caption=post)
+        photo_message = await message.answer_photo(
+            photo=image_file, caption=markdown_to_html(post)
+        )
 
         image_file_id = photo_message.photo[-1].file_id if photo_message.photo else None
         await state.update_data(
@@ -387,7 +390,7 @@ async def overlay_position_selected_handler(
                 merged_bytes,
                 filename="post_image_with_overlay.png",
             ),
-            caption=post_text,
+            caption=markdown_to_html(post_text),
         )
 
         new_file_id = (
@@ -481,7 +484,7 @@ async def editing_handler(
 
         if image_file_id:
             photo_message = await message.answer_photo(
-                photo=image_file_id, caption=updated_post
+                photo=image_file_id, caption=markdown_to_html(updated_post)
             )
             new_image_file_id = (
                 photo_message.photo[-1].file_id
@@ -493,7 +496,7 @@ async def editing_handler(
                 has_image=True,
             )
         else:
-            await message.answer(updated_post)
+            await message.answer(markdown_to_html(updated_post))
 
         await track_user_operation(user_id=user_id)
         return await message.answer(
