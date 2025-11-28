@@ -159,8 +159,8 @@ class UserAccessMiddleware(BaseMiddleware):
             await user_service.send_access_request_to_admin(
                 user=user,
                 text=(
-                    f"Пользователь {user.username or 'без username'} "
-                    f"({user.telegram_id}) запрашивает доступ.\n\n"
+                    f"Пользователь <code>@{user.username or 'без username'}</code> "
+                    f"(<code>{user.telegram_id}</code>) запрашивает доступ.\n\n"
                     "Откройте /admin → «Посмотреть запросы», чтобы выдать доступ."
                 ),
             )
