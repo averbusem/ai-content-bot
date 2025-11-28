@@ -179,9 +179,8 @@ class GigaChatModel:
                     f"Ошибка анализа изображения: HTTP {e.response.status_code}: {error_detail}"
                 )
 
-    @ensure_text_length()
     @with_retry
-    async def generate_text(
+    async def _generate_text_raw(
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
@@ -190,17 +189,8 @@ class GigaChatModel:
         max_tokens: Optional[int] = None,
     ) -> str:
         """
-        Генерация текста
-
-        Args:
-            prompt: Запрос пользователя
-            system_prompt: Системный промпт для настройки поведения
-            use_history: Использовать ли историю диалога
-            temperature: Температура генерации (креативность)
-            max_tokens: Максимальное количество токенов
-
-        Returns:
-            Сгенерированный текст
+        Внутренний метод генерации текста без проверки длины.
+        Используется для случаев, когда нужен полный ответ (например, edit_post).
         """
         await self._ensure_token()
 
@@ -273,6 +263,37 @@ class GigaChatModel:
                 except ValueError:
                     error_detail = e.response.text
                 raise Exception(f"HTTP {e.response.status_code}: {error_detail}")
+
+    @ensure_text_length()
+    @with_retry
+    async def generate_text(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        use_history: bool = False,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """
+        Генерация текста с проверкой длины (максимум 1024 символа)
+
+        Args:
+            prompt: Запрос пользователя
+            system_prompt: Системный промпт для настройки поведения
+            use_history: Использовать ли историю диалога
+            temperature: Температура генерации (креативность)
+            max_tokens: Максимальное количество токенов
+
+        Returns:
+            Сгенерированный текст
+        """
+        return await self._generate_text_raw(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            use_history=use_history,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
     @with_retry
     async def generate_image(
