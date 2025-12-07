@@ -6,6 +6,7 @@ from src.bot.keyboards import (
     back_to_menu_keyboard,
     main_menu_keyboard,
     text_generation_method_keyboard,
+    content_plan_menu_keyboard,
 )
 from src.bot.states import (
     ContentPlanStates,
@@ -51,6 +52,16 @@ async def text_editor_handler(callback: types.CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "main_menu:content_plan")
+@check_user_limit()
+async def content_plan_menu(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+    return await callback.message.edit_text(
+        "📅 <b>Контент-план</b>\n\nВыберите действие:",
+        reply_markup=content_plan_menu_keyboard(),
+    )
+
+
+@router.callback_query(F.data == "content_plan:create")
 @check_user_limit()
 async def content_plan_start(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(ContentPlanStates.duration_input)

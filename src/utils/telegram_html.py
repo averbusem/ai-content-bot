@@ -21,7 +21,7 @@ ALLOWED_TAGS: dict[str, set[str]] = {
     "blockquote": set(),
 }
 
-SELF_CLOSING_TAGS: set[str] = {"br"}
+SELF_CLOSING_TAGS: set[str] = set()  # Telegram не поддерживает самозакрывающиеся теги
 
 
 class _TelegramHTMLSanitizer(HTMLParser):
@@ -80,6 +80,8 @@ def sanitize_telegram_html(text: str | None) -> str:
     """Удаляет или экранирует неподдерживаемые Telegram HTML-теги."""
     if not text:
         return ""
+    # Заменяем <br> и <br/> на перенос строки, так как Telegram не поддерживает этот тег
+    text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
     parser = _TelegramHTMLSanitizer()
     parser.feed(text)
     parser.close()

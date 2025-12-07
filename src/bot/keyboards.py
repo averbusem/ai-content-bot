@@ -724,3 +724,150 @@ def post_schedule_remind_offset_keyboard() -> InlineKeyboardMarkup:
 
     builder.adjust(1)
     return builder.as_markup()
+
+
+def content_plan_menu_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура подменю контент-плана."""
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="➕ Создать контент план",
+            callback_data="content_plan:create",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="📋 Посмотреть контент планы",
+            callback_data="content_plan:list",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def content_plans_list_keyboard(
+    plans: list, page: int, total_pages: int
+) -> InlineKeyboardMarkup:
+    """Клавиатура со списком контент-планов и пагинацией."""
+    builder = InlineKeyboardBuilder()
+
+    for plan in plans:
+        plan_date = plan.created_at.strftime("%d.%m.%Y")
+        text = f"{plan.name} - {plan_date}"
+        if len(text) > 50:
+            text = text[:47] + "..."
+        builder.add(
+            InlineKeyboardButton(
+                text=text,
+                callback_data=f"content_plan:view:{plan.id}",
+            )
+        )
+
+    nav_buttons = []
+    if page > 1:
+        nav_buttons.append(
+            InlineKeyboardButton(
+                text="◀️ Назад",
+                callback_data=f"content_plan:list_page:{page - 1}",
+            )
+        )
+    if page < total_pages:
+        nav_buttons.append(
+            InlineKeyboardButton(
+                text="Вперёд ▶️",
+                callback_data=f"content_plan:list_page:{page + 1}",
+            )
+        )
+
+    if nav_buttons:
+        builder.row(*nav_buttons)
+
+    builder.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def content_plan_days_keyboard(
+    days: list, plan_id: int, page: int, total_pages: int
+) -> InlineKeyboardMarkup:
+    """Клавиатура с днями контент-плана и пагинацией."""
+    builder = InlineKeyboardBuilder()
+
+    for day in days:
+        day_text = f"{day.day_name} {day.date}, {day.time}"
+        if day.topic:
+            topic_short = day.topic[:30] + "..." if len(day.topic) > 30 else day.topic
+            day_text = f"{day_text}\n{topic_short}"
+        if len(day_text) > 50:
+            day_text = day_text[:47] + "..."
+        builder.add(
+            InlineKeyboardButton(
+                text=day_text,
+                callback_data=f"content_plan:day:{day.id}",
+            )
+        )
+
+    nav_buttons = []
+    if page > 1:
+        nav_buttons.append(
+            InlineKeyboardButton(
+                text="◀️ Назад",
+                callback_data=f"content_plan:days_page:{plan_id}:{page - 1}",
+            )
+        )
+    if page < total_pages:
+        nav_buttons.append(
+            InlineKeyboardButton(
+                text="Вперёд ▶️",
+                callback_data=f"content_plan:days_page:{plan_id}:{page + 1}",
+            )
+        )
+
+    if nav_buttons:
+        builder.row(*nav_buttons)
+
+    builder.add(
+        InlineKeyboardButton(
+            text="🗑 Удалить этот контент-план",
+            callback_data=f"content_plan:delete:{plan_id}",
+        )
+    )
+
+    builder.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def content_plan_day_detail_keyboard(day_id: int, plan_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура для детального просмотра дня контент-плана."""
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(
+            text="📝 Сгенерировать пост",
+            callback_data=f"content_plan:generate_post:{day_id}",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
+            text="⬅️ К дням плана",
+            callback_data=f"content_plan:view:{plan_id}",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
