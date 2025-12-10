@@ -153,3 +153,18 @@ class ContentPlanDayRepository:
         query = select(ContentPlanDay).where(ContentPlanDay.id == day_id)
         result = await session.execute(query)
         return result.scalar_one_or_none()
+
+    async def update_topic(
+        self,
+        session: AsyncSession,
+        day_id: int,
+        topic: str,
+    ) -> Optional[ContentPlanDay]:
+        """Обновить тему дня контент-плана."""
+        day = await self.get_by_id(session=session, day_id=day_id)
+        if day is None:
+            return None
+
+        day.topic = topic
+        await session.flush()
+        return day

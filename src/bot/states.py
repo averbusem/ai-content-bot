@@ -93,6 +93,10 @@ class ContentPlanStates(StatesGroup):
     waiting_results = State()
 
 
+class ContentPlanDayStates(StatesGroup):
+    edit_topic = State()
+
+
 class PostScheduleStates(StatesGroup):
     """
     FSM-состояния для создания запланированного поста.
