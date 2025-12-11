@@ -81,6 +81,44 @@ def back_to_menu_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def help_menu_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    sections = [
+        ("📝 Создание поста", "help:section:posts"),
+        ("🎨 Создание картинки", "help:section:images"),
+        ("✏️ Редактор текста", "help:section:text_editor"),
+        ("📅 Контент-план", "help:section:content_plan"),
+        ("⏰ Запланировать пост", "help:section:schedule"),
+        ("⚙️ Информация о НКО", "help:section:nko"),
+        ("💡 Советы", "help:section:tips"),
+    ]
+
+    for text, callback_data in sections:
+        builder.add(InlineKeyboardButton(text=text, callback_data=callback_data))
+
+    builder.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def help_section_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    builder.add(
+        InlineKeyboardButton(text="⬅️ Разделы помощи", callback_data="help:menu")
+    )
+    builder.add(
+        InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu:back")
+    )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def nko_data_empty_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
