@@ -12,7 +12,7 @@ from src.bot.keyboards import (
     main_menu_keyboard,
     text_generation_results_keyboard,
 )
-from src.bot.states import ContentPlanStates, TextGenerationStates
+from src.bot.states import ContentPlanDayStates, ContentPlanStates, TextGenerationStates
 from src.bot.handlers.utils.text_formatter import markdown_to_html
 from src.services.ai_manager import ai_manager
 from src.services.content_plan_service import ContentPlanService
@@ -436,6 +436,108 @@ async def content_plan_day_handler(
     return await callback.message.edit_text(
         text,
         reply_markup=content_plan_day_detail_keyboard(day_id, day.content_plan_id),
+    )
+
+
+@router.callback_query(F.data.startswith("content_plan:edit_topic:"))
+async def content_plan_edit_topic_start(
+    callback: types.CallbackQuery, state: FSMContext, session: AsyncSession
+):
+    """Запрос ввода новой темы для дня контент-плана."""
+    day_id = int(callback.data.split(":")[-1])
+    content_plan_service = ContentPlanService(session=session)
+
+    day = await content_plan_service.get_day_by_id(day_id)
+    if not day:
+        await callback.answer("День не найден", show_alert=True)
+        return
+
+    plan = await content_plan_service.get_plan_by_id(day.content_plan_id)
+    if not plan or plan.user_id != callback.from_user.id:
+        await callback.answer("Этот день вам недоступен", show_alert=True)
+        return
+
+    await state.set_state(ContentPlanDayStates.edit_topic)
+    await state.update_data(day_id=day_id, plan_id=plan.id)
+
+    await callback.answer()
+    current_topic = sanitize_telegram_html(day.topic) if day.topic else "—"
+    prompt = (
+        f"✏️ Введите новую тему поста для {day.day_name} {day.date}, {day.time}\n\n"
+        f"Текущая тема: {current_topic}"
+    )
+    return await callback.message.answer(prompt, reply_markup=back_to_menu_keyboard())
+
+
+@router.message(ContentPlanDayStates.edit_topic, F.text)
+async def content_plan_edit_topic_save(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
+    """Сохранить новую тему дня контент-плана."""
+    new_topic = message.text.strip()
+    if not new_topic:
+        return await message.answer(
+            "❌ Тема не может быть пустой. Отправьте текстовую тему поста.",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    data = await state.get_data()
+    day_id = data.get("day_id")
+    plan_id = data.get("plan_id")
+    if not day_id or not plan_id:
+        await state.clear()
+        return await message.answer(
+            "Сессия редактирования устарела. Откройте день заново.",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    content_plan_service = ContentPlanService(session=session)
+    updated_day = await content_plan_service.update_day_topic(
+        day_id=day_id, topic=new_topic, user_id=message.from_user.id
+    )
+
+    if not updated_day:
+        await state.clear()
+        return await message.answer(
+            "Не удалось обновить тему. Возможно, этот день вам недоступен.",
+            reply_markup=back_to_menu_keyboard(),
+        )
+
+    await state.clear()
+
+    from src.bot.keyboards import content_plan_day_detail_keyboard
+
+    safe_post_type = (
+        sanitize_telegram_html(updated_day.post_type) if updated_day.post_type else None
+    )
+    safe_topic = sanitize_telegram_html(updated_day.topic) if updated_day.topic else "—"
+    safe_format = (
+        sanitize_telegram_html(updated_day.format) if updated_day.format else None
+    )
+
+    text = (
+        f"📅 <b>День контент-плана</b>\n\n"
+        f"📆 Дата: {updated_day.day_name} {updated_day.date}, {updated_day.time}\n"
+        f"📋 Неделя: {updated_day.week}\n"
+    )
+
+    if safe_post_type:
+        text += f"📝 Тип: {safe_post_type}\n"
+    text += f"💡 Тема: {safe_topic}\n"
+    if safe_format:
+        text += f"🎨 Формат: {safe_format}\n"
+
+    return await message.answer(
+        f"✅ Тема обновлена!\n\n{text}",
+        reply_markup=content_plan_day_detail_keyboard(day_id, plan_id),
+    )
+
+
+@router.message(ContentPlanDayStates.edit_topic)
+async def content_plan_edit_topic_invalid(message: types.Message):
+    return await message.answer(
+        "Пожалуйста, отправьте текстовую тему поста.",
+        reply_markup=back_to_menu_keyboard(),
     )
 
 

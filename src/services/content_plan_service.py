@@ -124,6 +124,32 @@ class ContentPlanService:
             day_id=day_id,
         )
 
+    async def update_day_topic(
+        self, day_id: int, topic: str, *, user_id: Optional[int] = None
+    ) -> Optional[ContentPlanDay]:
+        """
+        Обновить тему дня контент-плана.
+
+        Если передан user_id, дополнительно проверяет принадлежность плана пользователю.
+        """
+        day = await self.day_repository.get_by_id(session=self.session, day_id=day_id)
+        if day is None:
+            return None
+
+        if user_id is not None:
+            plan = await self.plan_repository.get_by_id(
+                session=self.session, plan_id=day.content_plan_id
+            )
+            if plan is None or plan.user_id != user_id:
+                return None
+
+        updated_day = await self.day_repository.update_topic(
+            session=self.session, day_id=day_id, topic=topic
+        )
+        if updated_day:
+            await self.session.commit()
+        return updated_day
+
     async def delete_content_plan(self, user_id: int, plan_id: int) -> bool:
         """
         Удалить контент-план пользователя.

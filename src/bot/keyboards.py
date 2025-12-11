@@ -855,6 +855,12 @@ def content_plan_day_detail_keyboard(day_id: int, plan_id: int) -> InlineKeyboar
 
     builder.add(
         InlineKeyboardButton(
+            text="✏️ Изменить тему",
+            callback_data=f"content_plan:edit_topic:{day_id}",
+        )
+    )
+    builder.add(
+        InlineKeyboardButton(
             text="📝 Сгенерировать пост",
             callback_data=f"content_plan:generate_post:{day_id}",
         )
