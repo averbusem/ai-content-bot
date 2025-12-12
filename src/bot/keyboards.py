@@ -90,6 +90,7 @@ def help_menu_keyboard() -> InlineKeyboardMarkup:
         ("✏️ Редактор текста", "help:section:text_editor"),
         ("📅 Контент-план", "help:section:content_plan"),
         ("⏰ Запланировать пост", "help:section:schedule"),
+        ("👥 Групповые чаты", "help:section:group_chats"),
         ("⚙️ Информация о НКО", "help:section:nko"),
         ("💡 Советы", "help:section:tips"),
     ]
